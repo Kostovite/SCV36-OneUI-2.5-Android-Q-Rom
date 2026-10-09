@@ -1,0 +1,41 @@
+# Non-ELF / dlopen'ed S8 Pie vendor files copied into the T835-based vendor (paths relative to vendor/).
+# Bluetooth (Broadcom BCM4361): vendor lib is dlopen'ed by the BT HAL; firmware patches
+lib64/libbt-vendor.so
+lib/libbt-vendor.so
+firmware/bcm4361B0_murata.hcd
+firmware/bcm4361B0_semco.hcd
+# Wi-Fi (Broadcom bcmdhd): firmware, nvram for every module revision, supplicant/hostapd configs
+etc/wifi/
+# NFC (Samsung S3NRN82): stack config + feature permissions
+etc/libnfc-sec-vendor.conf
+etc/permissions/android.hardware.nfc.xml
+etc/permissions/android.hardware.nfc.hce.xml
+etc/permissions/android.hardware.nfc.hcef.xml
+etc/permissions/com.android.nfc_extras.xml
+# Audio: same WCD9340 codec, S8 speaker/earpiece/mic routing and policy
+etc/mixer_paths.xml
+etc/mixer_paths_tavil.xml
+etc/mixer_paths_i2s.xml
+etc/audio_platform_info.xml
+etc/audio_platform_info_i2s.xml
+etc/audio_policy_configuration.xml
+etc/audio_policy_configuration_sec.xml
+etc/audio_policy_volumes.xml
+etc/audio_tuning_mixer_tavil.txt
+etc/audio_tuning_mixer.txt
+etc/audio/
+etc/sensors/
+firmware/sec_senn82ab_firmware.bin
+etc/sec_senn82ab_rfreg.bin
+# Camera (S8 Pie mm-camera, see transplant_deps.py 'camera'): sensor list (name compiled into
+# libmmcamera2_sensor_modules.so) + per-module chromatix lists. cpp_firmware is identical on both.
+etc/firmware/msm8998_camera_dream.xml
+etc/firmware/F12QL_s5k2l2sa_chromatix.xml
+etc/firmware/F12QS_imx333_chromatix.xml
+etc/firmware/V08QL_s5k3h1sx_chromatix.xml
+etc/firmware/V08QL_s5k3h1sx_cc_chromatix.xml
+etc/firmware/V08QS_imx320_chromatix.xml
+etc/firmware/V08QS_imx320_cc_chromatix.xml
+etc/firmware/s5k5e6yx_chromatix.xml
+# Wi-Fi (Broadcom): S8 init for /sys/wifi/* and the dhd fw path param (macloader: "Failed to open wlan fw path param")
+etc/init/wifi_brcm.rc

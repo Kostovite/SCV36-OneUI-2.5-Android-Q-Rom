@@ -1,0 +1,630 @@
+diff --git a/drivers/fingerprint/et5xx-spi.c b/drivers/fingerprint/et5xx-spi.c
+index fabe8e2b4..8363bd055 100644
+--- a/drivers/fingerprint/et5xx-spi.c
++++ b/drivers/fingerprint/et5xx-spi.c
+@@ -179,10 +179,24 @@ unsigned int etspi_fps_interrupt_poll(
+ 
+ /*-------------------------------------------------------------------------*/
+ 
++static void etspi_power_control(struct etspi_data *etspi, int status);
++
+ static void etspi_reset(struct etspi_data *etspi)
+ {
+ 	pr_info("%s\n", __func__);
+ 
++	if (!etspi->sleepPin) {
++		/* S8: no reset pin - the ET510 reset follows its supply, so a reset is a power cycle */
++		if (etspi->ldo_pin) {
++			/* as stock SCV36 fps_reset: LDO toggle only, pins untouched */
++			gpio_set_value(etspi->ldo_pin, 0);
++			usleep_range(1100, 1150);
++			gpio_set_value(etspi->ldo_pin, 1);
++			usleep_range(12000, 12050);
++			etspi->reset_count++;
++		}
++		return;
++	}
+ 	gpio_set_value(etspi->sleepPin, 0);
+ 	usleep_range(1050, 1100);
+ 	gpio_set_value(etspi->sleepPin, 1);
+@@ -197,19 +211,20 @@ static void etspi_power_control(struct etspi_data *etspi, int status)
+ 			gpio_set_value(etspi->buckenPin, 1);
+ 			usleep_range(1950, 2000);
+ 		}
++		/* as stock SCV36 fps_power_control: LDO, idle pins, 1.6 ms, sleepPin, 12 ms */
+ 		if (etspi->ldo_pin)
+ 			gpio_set_value(etspi->ldo_pin, 1);
+-		usleep_range(50, 100);
++		etspi_pin_control(etspi, true);
++		usleep_range(1600, 1650);
+ 		if (etspi->sleepPin)
+ 			gpio_set_value(etspi->sleepPin, 1);
+-		etspi_pin_control(etspi, true);
+-		usleep_range(10000, 10050);
++		usleep_range(12000, 12050);
+ 	} else if (status == 0) {
+-		etspi_pin_control(etspi, false);
+ 		if (etspi->sleepPin)
+ 			gpio_set_value(etspi->sleepPin, 0);
+ 		if (etspi->ldo_pin)
+ 			gpio_set_value(etspi->ldo_pin, 0);
++		etspi_pin_control(etspi, false);
+ 		if (etspi->buckenPin)
+ 			gpio_set_value(etspi->buckenPin, 0);
+ 	} else {
+@@ -245,7 +260,9 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	u8 *buf, *address, *result, *fr;
+ 
+ 	/* Check type and command number */
+-	if (_IOC_TYPE(cmd) != EGIS_IOC_MAGIC) {
++	/* S8 Pie libbauthserver uses magic 'j' (same transfer struct / opcodes as the 'k' Q userspace) */
++#define EGIS_IOC_MAGIC_S8 'j'
++	if (_IOC_TYPE(cmd) != EGIS_IOC_MAGIC && _IOC_TYPE(cmd) != EGIS_IOC_MAGIC_S8) {
+ 		pr_err("%s _IOC_TYPE(cmd) != EGIS_IOC_MAGIC", __func__);
+ 		return -ENOTTY;
+ 	}
+@@ -489,34 +506,17 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		pr_info("%s FP_SET_SPI_CLOCK, clock = %d\n",
+ 				__func__, ioc->speed_hz);
+ #ifdef ENABLE_SENSORS_FPRINT_SECURE
++		/* S8 stock: TZ owns the BLSP12 clocks - only the speed and the wakelock here (stock fps_ioctl) */
+ 		if (etspi->enabled_clk) {
+ 			if (spi->max_speed_hz == ioc->speed_hz) {
+ 				pr_info("%s already enabled same clock.\n", __func__);
+ 				break;
+-			} else {
+-				pr_info("%s already enabled. DISABLE_SPI_CLOCK\n", __func__);
+-
+-				retval = fp_spi_clock_disable(spi);
+-				if (retval < 0)
+-					pr_err("%s: couldn't disable spi clks\n"
+-						, __func__);
+-				usleep_range(950, 1000);
+-				wake_unlock(&etspi->fp_spi_lock);
+-				etspi->enabled_clk = false;
+ 			}
++			pr_info("%s already enabled. DISABLE_SPI_CLOCK\n", __func__);
++			wake_unlock(&etspi->fp_spi_lock);
++			etspi->enabled_clk = false;
+ 		}
+ 		spi->max_speed_hz = ioc->speed_hz;
+-		retval = fp_spi_clock_set_rate(spi);
+-		if (retval < 0)
+-			pr_err("%s: Unable to set spi clk rate\n",
+-				__func__);
+-		else {
+-			retval = fp_spi_clock_enable(spi);
+-			if (retval < 0)
+-				pr_err("%s: Unable to enable spi clk\n",
+-					__func__);
+-		}
+-		usleep_range(950, 1000);
+ 		wake_lock(&etspi->fp_spi_lock);
+ 		etspi->enabled_clk = true;
+ #else
+@@ -548,15 +548,8 @@ static long etspi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ #ifdef ENABLE_SENSORS_FPRINT_SECURE
+ 	case FP_DIABLE_SPI_CLOCK:
+ 		pr_info("%s FP_DISABLE_SPI_CLOCK\n", __func__);
+-
+-		if (etspi->enabled_clk) {
++		if (etspi->enabled_clk) {	/* S8 stock: no clock gating from HLOS */
+ 			pr_info("%s DISABLE_SPI_CLOCK\n", __func__);
+-
+-			retval = fp_spi_clock_disable(spi);
+-			if (retval < 0)
+-				pr_err("%s: couldn't disable spi clks\n"
+-					, __func__);
+-			usleep_range(950, 1000);
+ 			wake_unlock(&etspi->fp_spi_lock);
+ 			etspi->enabled_clk = false;
+ 		}
+@@ -731,18 +724,20 @@ int etspi_platformInit(struct etspi_data *etspi)
+ 			}
+ 			gpio_direction_output(etspi->ldo_pin, 0);
+ 		}
+-		status = gpio_request(etspi->sleepPin, "etspi_sleep");
+-		if (status < 0) {
+-			pr_err("%s gpio_requset etspi_sleep failed\n",
+-				__func__);
+-			goto etspi_platformInit_sleep_failed;
+-		}
++		if (etspi->sleepPin) {
++			status = gpio_request(etspi->sleepPin, "etspi_sleep");
++			if (status < 0) {
++				pr_err("%s gpio_requset etspi_sleep failed\n",
++					__func__);
++				goto etspi_platformInit_sleep_failed;
++			}
+ 
+-		status = gpio_direction_output(etspi->sleepPin, 0);
+-		if (status < 0) {
+-			pr_err("%s gpio_direction_output SLEEP failed\n", __func__);
+-			status = -EBUSY;
+-			goto etspi_platformInit_sleep_failed;
++			status = gpio_direction_output(etspi->sleepPin, 0);
++			if (status < 0) {
++				pr_err("%s gpio_direction_output SLEEP failed\n", __func__);
++				status = -EBUSY;
++				goto etspi_platformInit_sleep_failed;
++			}
+ 		}
+ 
+ 		status = gpio_request(etspi->drdyPin, "etspi_drdy");
+@@ -782,7 +777,8 @@ int etspi_platformInit(struct etspi_data *etspi)
+ etspi_platformInit_gpio_init_failed:
+ 	gpio_free(etspi->drdyPin);
+ etspi_platformInit_drdy_failed:
+-	gpio_free(etspi->sleepPin);
++	if (etspi->sleepPin)
++		gpio_free(etspi->sleepPin);
+ etspi_platformInit_sleep_failed:
+ 	gpio_free(etspi->ldo_pin);
+ etspi_platformInit_ldo_failed:
+@@ -802,7 +798,8 @@ void etspi_platformUninit(struct etspi_data *etspi)
+ 		etspi->drdy_irq_flag = DRDY_IRQ_DISABLE;
+ 		if (etspi->ldo_pin)
+ 			gpio_free(etspi->ldo_pin);
+-		gpio_free(etspi->sleepPin);
++		if (etspi->sleepPin)
++			gpio_free(etspi->sleepPin);
+ 		gpio_free(etspi->drdyPin);
+ 		if (etspi->buckenPin)
+ 			gpio_free(etspi->buckenPin);
+@@ -813,6 +810,17 @@ void etspi_platformUninit(struct etspi_data *etspi)
+ 	}
+ }
+ 
++/* S8 (dreamq JPN) DT uses the Samsung "fps,common" binding: fps-<x> instead of etspi-<x> property names */
++static const char *etspi_prop(struct device_node *np, const char *name)
++{
++	static char buf[64];
++
++	if (strncmp(name, "etspi-", 6) || of_find_property(np, name, NULL))
++		return name;
++	snprintf(buf, sizeof(buf), "fps-%s", name + 6);
++	return buf;
++}
++
+ static int etspi_parse_dt(struct device *dev,
+ 	struct etspi_data *data)
+ {
+@@ -821,17 +829,17 @@ static int etspi_parse_dt(struct device *dev,
+ 	int errorno = 0;
+ 	int gpio;
+ 
+-	gpio = of_get_named_gpio_flags(np, "etspi-sleepPin",
++	gpio = of_get_named_gpio_flags(np, etspi_prop(np, "etspi-sleepPin"),
+ 		0, &flags);
+ 	if (gpio < 0) {
+-		errorno = gpio;
+-		goto dt_exit;
++		data->sleepPin = 0;
++		pr_info("%s: no sleepPin (S8 fps,common)\n", __func__);
+ 	} else {
+ 		data->sleepPin = gpio;
+ 		pr_info("%s: sleepPin=%d\n",
+ 			__func__, data->sleepPin);
+ 	}
+-	gpio = of_get_named_gpio_flags(np, "etspi-drdyPin",
++	gpio = of_get_named_gpio_flags(np, etspi_prop(np, "etspi-drdyPin"),
+ 		0, &flags);
+ 	if (gpio < 0) {
+ 		errorno = gpio;
+@@ -841,7 +849,7 @@ static int etspi_parse_dt(struct device *dev,
+ 		pr_info("%s: drdyPin=%d\n",
+ 			__func__, data->drdyPin);
+ 	}
+-	gpio = of_get_named_gpio_flags(np, "etspi-ldoPin",
++	gpio = of_get_named_gpio_flags(np, etspi_prop(np, "etspi-ldoPin"),
+ 		0, &flags);
+ 	if (gpio < 0) {
+ 		data->ldo_pin = 0;
+@@ -851,10 +859,10 @@ static int etspi_parse_dt(struct device *dev,
+ 		pr_info("%s: ldo_pin=%d\n",
+ 			__func__, data->ldo_pin);
+ 	}
+-	if (!of_find_property(np, "etspi-buckenPin", NULL)) {
++	if (!of_find_property(np, etspi_prop(np, "etspi-buckenPin"), NULL)) {
+ 		pr_err("%s: not set bucken in dts\n", __func__);
+ 	} else {
+-		gpio = of_get_named_gpio(np, "etspi-buckenPin", 0);
++		gpio = of_get_named_gpio(np, etspi_prop(np, "etspi-buckenPin"), 0);
+ 		if (gpio < 0) {
+ 			data->buckenPin = 0;
+ 			pr_err("%s: fail to get buckenPin : (%d)\n",
+@@ -865,16 +873,16 @@ static int etspi_parse_dt(struct device *dev,
+ 				__func__, data->buckenPin);
+ 		}
+ 	}
+-	if (of_property_read_u32(np, "etspi-min_cpufreq_limit",
++	if (of_property_read_u32(np, etspi_prop(np, "etspi-min_cpufreq_limit"),
+ 		&data->min_cpufreq_limit))
+ 		data->min_cpufreq_limit = 0;
+ 
+-	if (of_property_read_string_index(np, "etspi-chipid", 0,
++	if (of_property_read_string_index(np, etspi_prop(np, "etspi-chipid"), 0,
+ 			(const char **)&data->chipid))
+ 		data->chipid = NULL;
+ 	pr_info("%s: chipid: %s\n", __func__, data->chipid);
+ 
+-	if (of_property_read_u32(np, "etspi-wog", &data->detect_mode))
++	if (of_property_read_u32(np, etspi_prop(np, "etspi-wog"), &data->detect_mode))
+ 		data->detect_mode = DETECT_ADM;
+ 	pr_info("%s: adm: %d\n", __func__, data->detect_mode);
+ 
+@@ -1204,6 +1212,9 @@ static int etspi_probe(struct spi_device *spi)
+ 
+ #ifdef ENABLE_SENSORS_FPRINT_SECURE
+ 	etspi->tz_mode = true;
++	/* S8: no reset pin - keep the sensor powered from probe on (the S9 HAL expects a live sensor) */
++	if (!etspi->sleepPin && etspi->ldo_pin)
++		etspi_power_control(etspi, 1);
+ #endif
+ 	etspi->reset_count = 0;
+ 	etspi->interrupt_count = 0;
+@@ -1330,6 +1341,7 @@ static const struct dev_pm_ops etspi_pm_ops = {
+ 
+ const static struct of_device_id etspi_match_table[] = {
+ 	{ .compatible = "etspi,et5xx",},
++	{ .compatible = "fps,common",},
+ 	{},
+ };
+ 
+diff --git a/drivers/fingerprint/vfs8xxx.c b/drivers/fingerprint/vfs8xxx.c
+index 7af5a5125..a750ad1e6 100644
+--- a/drivers/fingerprint/vfs8xxx.c
++++ b/drivers/fingerprint/vfs8xxx.c
+@@ -68,6 +68,7 @@
+ #ifdef CONFIG_OF
+ static const struct of_device_id vfsspi_match_table[] = {
+ 	{.compatible = "vfsspi,vfs8xxx",},
++	{.compatible = "fps,common",},	/* S8 dreamq JPN stock DT node */
+ 	{},
+ };
+ #else
+@@ -974,17 +975,28 @@ static void vfsspi_platformUninit(struct vfsspi_device_data *vfsspi_device)
+ 	}
+ }
+ 
++/* S8 (dreamq JPN) DT uses the Samsung "fps,common" binding: fps-<x> instead of vfsspi-<x> property names */
++static const char *vfsspi_prop(struct device_node *np, const char *name)
++{
++	static char buf[64];
++
++	if (strncmp(name, "vfsspi-", 7) || of_find_property(np, name, NULL))
++		return name;
++	snprintf(buf, sizeof(buf), "fps-%s", name + 7);
++	return buf;
++}
++
+ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ {
+ 	struct device_node *np = dev->of_node;
+ 	int errorno = 0;
+ 	int gpio;
+ 
+-	if (!of_find_property(np, "vfsspi-sleepPin", NULL)) {
++	if (!of_find_property(np, vfsspi_prop(np, "vfsspi-sleepPin"), NULL)) {
+ 		pr_info("%s: not set sleepPin in dts\n", __func__);
+ 		data->sleep_pin = 0;
+ 	} else {
+-		gpio = of_get_named_gpio(np, "vfsspi-sleepPin", 0);
++		gpio = of_get_named_gpio(np, vfsspi_prop(np, "vfsspi-sleepPin"), 0);
+ 		if (gpio < 0) {
+ 			errorno = gpio;
+ 			goto dt_exit;
+@@ -994,7 +1006,7 @@ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ 		}
+ 	}
+ 
+-	gpio = of_get_named_gpio(np, "vfsspi-drdyPin", 0);
++	gpio = of_get_named_gpio(np, vfsspi_prop(np, "vfsspi-drdyPin"), 0);
+ 	if (gpio < 0) {
+ 		errorno = gpio;
+ 		goto dt_exit;
+@@ -1003,7 +1015,7 @@ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ 		pr_info("%s: drdyPin=%d\n", __func__, data->drdy_pin);
+ 	}
+ 
+-	gpio = of_get_named_gpio(np, "vfsspi-ldoPin", 0);
++	gpio = of_get_named_gpio(np, vfsspi_prop(np, "vfsspi-ldoPin"), 0);
+ 	if (gpio < 0) {
+ 		data->ldo_pin = 0;
+ 		pr_info("%s: not use ldo_pin\n", __func__);
+@@ -1012,7 +1024,7 @@ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ 		pr_info("%s: ldo_pin=%d\n", __func__, data->ldo_pin);
+ 	}
+ 
+-	if (of_property_read_string(np, "vfsspi-regulator", &data->btp_vdd)
++	if (of_property_read_string(np, vfsspi_prop(np, "vfsspi-regulator"), &data->btp_vdd)
+ 			< 0) {
+ 		pr_info("%s: not use btp_regulator\n", __func__);
+ 		data->btp_vdd = 0;
+@@ -1027,19 +1039,19 @@ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ 		}
+ 	}
+ 
+-	if (of_property_read_u32(np, "vfsspi-min_cpufreq_limit",
++	if (of_property_read_u32(np, vfsspi_prop(np, "vfsspi-min_cpufreq_limit"),
+ 		&data->min_cpufreq_limit))
+ 		data->min_cpufreq_limit = 0;
+ 
+ 	pr_info("%s: ldocontrol=%d, min_cpufreq_limit=%d\n",
+ 		__func__, data->ldocontrol, data->min_cpufreq_limit);
+ 
+-	if (of_property_read_string_index(np, "vfsspi-chipid", 0,
++	if (of_property_read_string_index(np, vfsspi_prop(np, "vfsspi-chipid"), 0,
+ 			(const char **)&data->chipid))
+ 		data->chipid = '\0';
+ 	pr_info("%s: chipid: %s\n", __func__, data->chipid);
+ 
+-	if (of_property_read_u32(np, "vfsspi-wog", &data->detect_mode))
++	if (of_property_read_u32(np, vfsspi_prop(np, "vfsspi-wog"), &data->detect_mode))
+ 		data->detect_mode = DETECT_ADM;
+ 	pr_info("%s: adm: %d\n", __func__, data->detect_mode);
+ 
+@@ -1047,7 +1059,7 @@ static int vfsspi_parse_dt(struct device *dev, struct vfsspi_device_data *data)
+ 	data->tz_mode = true;
+ #endif
+ 
+-	if (of_property_read_u32(np, "vfsspi-orient", &data->orient))
++	if (of_property_read_u32(np, vfsspi_prop(np, "vfsspi-orient"), &data->orient))
+ 		data->orient = 0;
+ 	pr_info("%s: orient=%d\n", __func__, data->orient);
+ 
+@@ -1106,7 +1118,8 @@ static ssize_t vfsspi_vendor_show(struct device *dev,
+ static ssize_t vfsspi_name_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%s\n", g_data->chipid);
++	/* as the stock SCV36 fps,common driver: report the Synaptics part (DT chipid says ET510) */
++	return sprintf(buf, "%s\n", "NAMSAN");
+ }
+ 
+ static ssize_t vfsspi_adm_show(struct device *dev,
+diff --git a/drivers/nfc/sec_nfc.c b/drivers/nfc/sec_nfc.c
+index 7474aa1ea..d5030af85 100644
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -1078,8 +1078,22 @@ static struct i2c_driver sec_nfc_driver = {
+ 	},
+ };
+ 
++/* One UI 2 NfcService requires /sys/class/nfc/nfc_support (newer Samsung kernels) */
++static struct class *sec_nfc_support_class;
++
++static ssize_t nfc_support_show(struct class *class, struct class_attribute *attr, char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "1\n");
++}
++static CLASS_ATTR(nfc_support, 0444, nfc_support_show, NULL);
++
+ static int __init sec_nfc_init(void)
+ {
++	sec_nfc_support_class = class_create(THIS_MODULE, "nfc");
++	if (IS_ERR(sec_nfc_support_class))
++		pr_err("nfc class create failed: %ld\n", PTR_ERR(sec_nfc_support_class));
++	else if (class_create_file(sec_nfc_support_class, &class_attr_nfc_support))
++		pr_err("nfc_support attribute create failed\n");
+ 	return SEC_NFC_INIT(&sec_nfc_driver);
+ }
+ 
+diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
+index a7b3f6d7c..040daf534 100644
+--- a/drivers/power/reset/msm-poweroff.c
++++ b/drivers/power/reset/msm-poweroff.c
+@@ -11,6 +11,15 @@
+  *
+  */
+ 
++#include <linux/kmsg_dump.h>
++#include <linux/blkdev.h>
++#include <linux/genhd.h>
++#include <linux/bio.h>
++#include <linux/gfp.h>
++#include <linux/kthread.h>
++#include <linux/delay.h>
++#include <linux/moduleparam.h>
++#include <linux/reboot.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -296,6 +305,124 @@ static void halt_spmi_pmic_arbiter(void)
+ 	}
+ }
+ 
++/* s8dbg: debug-only bootloop catcher, enabled by "s8dbg.recovery" on the kernel cmdline */
++static bool s8dbg_recovery;
++static int __init s8dbg_recovery_setup(char *str)
++{
++	s8dbg_recovery = true;
++	return 1;
++}
++__setup("s8dbg.recovery", s8dbg_recovery_setup);
++
++/*
++ * s8dbg log dump: in debug mode, copy the printk buffer to the start of the 'cache' partition on reboot
++ * (process context, storage still up). Layout: 4 KiB header "S8DBGLOG <len> <reboot cmd>", then the log.
++ */
++#define S8DBG_LOG_MAX	(2 << 20)
++static struct block_device *s8dbg_find_part(const char *name)
++{
++	struct class_dev_iter iter;
++	struct device *dev;
++	dev_t devt = 0;
++
++	class_dev_iter_init(&iter, &block_class, NULL, &part_type);
++	while ((dev = class_dev_iter_next(&iter))) {
++		struct hd_struct *part = dev_to_part(dev);
++
++		if (part->info && !strcmp((char *)part->info->volname, name)) {
++			devt = dev->devt;
++			break;
++		}
++	}
++	class_dev_iter_exit(&iter);
++	if (!devt)
++		return NULL;
++	return blkdev_get_by_dev(devt, FMODE_WRITE, NULL);
++}
++
++static int s8dbg_logdump(struct notifier_block *nb, unsigned long code, void *data)
++{
++	struct kmsg_dumper dumper = { .active = true };
++	struct block_device *bdev;
++	unsigned int order = get_order(S8DBG_LOG_MAX + PAGE_SIZE);
++	unsigned long buf;
++	size_t len = 0, done;
++	sector_t sector = 0;
++
++	pr_emerg("s8dbg: reboot code=%lu cmd=%s - dumping kernel log to cache\n",
++		 code, data ? (char *)data : "");
++	buf = __get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
++	if (!buf)
++		return NOTIFY_DONE;
++	kmsg_dump_rewind(&dumper);
++	kmsg_dump_get_buffer(&dumper, false, (char *)buf + PAGE_SIZE, S8DBG_LOG_MAX, &len);
++	snprintf((char *)buf, PAGE_SIZE, "S8DBGLOG %zu %s\n", len, data ? (char *)data : "");
++
++	bdev = s8dbg_find_part("cache");
++	if (IS_ERR_OR_NULL(bdev)) {
++		pr_emerg("s8dbg: cache partition not found\n");
++		goto out;
++	}
++	for (done = 0; done < PAGE_SIZE + len; ) {
++		struct bio *bio = bio_alloc(GFP_KERNEL, BIO_MAX_PAGES);
++		unsigned int n = 0;
++
++		bio->bi_bdev = bdev;
++		bio->bi_iter.bi_sector = sector;
++		while (n < BIO_MAX_PAGES && done < PAGE_SIZE + len) {
++			if (!bio_add_page(bio, virt_to_page(buf + done), PAGE_SIZE, 0))
++				break;
++			done += PAGE_SIZE;
++			n++;
++		}
++		sector += (n * PAGE_SIZE) >> 9;
++		submit_bio_wait(WRITE_SYNC, bio);
++		bio_put(bio);
++	}
++	blkdev_put(bdev, FMODE_WRITE);
++	pr_emerg("s8dbg: wrote %zu bytes of kernel log to cache\n", len);
++out:
++	free_pages(buf, order);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block s8dbg_reboot_nb = {
++	.notifier_call = s8dbg_logdump,
++	.priority = INT_MIN,	/* last notifier: capture as much shutdown output as possible */
++};
++
++/* s8dbg boot watchdog: catch boot hangs (no panic, no reboot) in debug images */
++static int s8dbg_timeout;
++module_param(s8dbg_timeout, int, 0644);
++
++static int s8dbg_watchdog_fn(void *unused)
++{
++	int t = 0;
++
++	while (!kthread_should_stop()) {
++		msleep(1000);
++		if (READ_ONCE(s8dbg_timeout) <= 0) {
++			pr_info("s8dbg: boot watchdog cancelled after %d s\n", t);
++			return 0;
++		}
++		if (++t >= READ_ONCE(s8dbg_timeout)) {
++			pr_emerg("s8dbg: boot watchdog expired after %d s - capturing log and rebooting\n", t);
++			kernel_restart("s8dbg-boot-timeout");
++		}
++	}
++	return 0;
++}
++
++static int __init s8dbg_logdump_init(void)
++{
++	if (s8dbg_recovery)
++		register_reboot_notifier(&s8dbg_reboot_nb);
++	if (s8dbg_recovery && s8dbg_timeout > 0)
++		kthread_run(s8dbg_watchdog_fn, NULL, "s8dbg_wdog");
++	return 0;
++}
++late_initcall(s8dbg_logdump_init);
++
+ static void msm_restart_prepare(const char *cmd)
+ {
+ 	bool need_warm_reset = false;
+@@ -304,6 +431,15 @@ static void msm_restart_prepare(const char *cmd)
+ 	unsigned long value;
+ 	int hard_reset_reason = 0xff;
+ #endif
++
++	if (s8dbg_recovery) {
++		pr_emerg("s8dbg: restart (cmd=%s) redirected to recovery via warm reset\n",
++			 cmd ? cmd : "");
++		qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
++		qpnp_pon_set_restart_reason(PON_RESTART_REASON_RECOVERY);
++		__raw_writel(0x77665502, restart_reason);
++		return;
++	}
+ #ifndef CONFIG_SEC_DEBUG
+ 	bool need_warm_reset = false;
+ 
+diff --git a/drivers/soc/qcom/qdsp6v2/apr.c b/drivers/soc/qcom/qdsp6v2/apr.c
+index 8215674f1..bc105be95 100644
+--- a/drivers/soc/qcom/qdsp6v2/apr.c
++++ b/drivers/soc/qcom/qdsp6v2/apr.c
+@@ -293,6 +293,8 @@ static void apr_add_child_devices(struct work_struct *work)
+ {
+ 	int ret;
+ 
++	if (!apr_dev_ptr)	/* legacy (Pie) DT: audio devices are top-level nodes */
++		return;
+ 	ret = of_platform_populate(apr_dev_ptr->of_node,
+ 			NULL, NULL, apr_dev_ptr);
+ 	if (ret)
+@@ -1099,7 +1101,7 @@ static void apr_cleanup(void)
+ 	}
+ }
+ 
+-static int apr_probe(struct platform_device *pdev)
++static int apr_common_init(struct device *dev)
+ {
+ 	int i, j, k;
+ 
+@@ -1129,11 +1131,16 @@ static int apr_probe(struct platform_device *pdev)
+ 	subsys_notif_register("apr_modem", AUDIO_NOTIFIER_MODEM_DOMAIN,
+ 			      &modem_service_nb);
+ 
+-	apr_dev_ptr = &pdev->dev;
++	apr_dev_ptr = dev;
+ 	INIT_DELAYED_WORK(&add_chld_dev_work, apr_add_child_devices);
+ 	return 0;
+ }
+ 
++static int apr_probe(struct platform_device *pdev)
++{
++	return apr_common_init(&pdev->dev);
++}
++
+ static int apr_remove(struct platform_device *pdev)
+ {
+ 	apr_cleanup();
+@@ -1157,7 +1164,15 @@ static struct platform_driver apr_driver = {
+ 
+ static int __init apr_init(void)
+ {
+-	platform_driver_register(&apr_driver);
++	struct device_node *np = of_find_compatible_node(NULL, NULL, "qcom,msm-audio-apr");
++
++	if (np) {
++		of_node_put(np);
++		platform_driver_register(&apr_driver);
++	} else {
++		pr_info("%s: no qcom,msm-audio-apr DT node, legacy (Pie DT) init\n", __func__);
++		apr_common_init(NULL);
++	}
+ 	apr_dummy_init();
+ 	return 0;
+ }

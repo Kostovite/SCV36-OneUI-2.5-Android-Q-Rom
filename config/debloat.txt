@@ -1,0 +1,76 @@
+# Paths (relative to the donor /system) removed from the One UI 2 port.
+# One entry per line; '#' comments. Directories are removed recursively.
+
+## --- Japan / au (KDDI) carrier apps ---
+preload
+app/FacebookAppManager_for_au
+app/WfdKDDILinkService
+app/HoneyBoardJPN
+app/iWnnIME_Mushroom
+app/JpnDioDict4
+app/DictDiotekForSec
+priv-app/auBasicHome
+priv-app/AuInitialSetting
+priv-app/AuMarket
+priv-app/au_setting_menu
+priv-app/AuShareLink
+priv-app/au_Wi-Fi_Connect
+priv-app/FacebookInstaller_for_au
+priv-app/FacebookServices_for_au
+priv-app/MyAu
+priv-app/KLoPApp
+priv-app/PlusMessage
+priv-app/DisasterApp
+priv-app/FsDtvApp
+etc/kddi_klop_config.xml
+media/dtv
+
+## --- FeliCa / Osaifu-Keitai (dead on a modified kernel anyway) ---
+app/FeliCaLock
+app/FeliCaRemoteLockKDI
+app/FeliCaTest
+app/MobileFeliCaClient
+app/MobileFeliCaMenuMainApp
+app/MobileFeliCaSettingApp
+app/MobileFeliCaWebPlugin
+app/MobileFeliCaWebPluginBoot
+app/NfcFn
+etc/felica
+etc/felica_access.xml
+
+## --- Knox lock / attestation / services that break or re-lock on a tripped device ---
+priv-app/KnoxGuard
+priv-app/KLMSAgent
+priv-app/knoxanalyticsagent
+priv-app/EnhancedAttestationAgent
+priv-app/SecureFolder
+priv-app/SamsungPass
+priv-app/PaymentFramework
+priv-app/SKMSAgent
+app/KnoxAttestationAgent
+app/SecurityLogAgent
+app/DsmsAPK
+app/SamsungPassAutofill_v1
+app/UniversalMDMClient
+app/MDMApp
+
+## --- Generic bloat / stubs ---
+app/Facebook_stub
+app/FBAppManager_NS
+priv-app/FBInstaller_NS
+priv-app/FBServices
+app/HiyaService
+app/DuoStub
+app/FlipboardBriefing
+app/KidsHome_Installer
+priv-app/OneDrive_Samsung_v3
+priv-app/Excel_SamsungStub
+priv-app/PowerPoint_SamsungStub
+priv-app/Word_SamsungStub
+priv-app/LinkedIn_SamsungStub
+priv-app/YourPhone_Stub
+priv-app/RepairReceipt
+priv-app/GearVRService
+priv-app/AndroidAutoStub
+app/GearManagerStub
+app/AutomationTest_FB

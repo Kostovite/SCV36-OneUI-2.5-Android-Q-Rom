@@ -1,0 +1,69 @@
+# G9600 (HK/CN) One UI 2 → S8 port: removed to fit the S8 system partition (4399 MiB usable).
+# Kept on purpose: Knox / KnoxGuard / security components (stock), phone/SMS/contacts, camera/gallery, Play Store/GMS,
+# Chrome + WebView, Maps, keyboard (HoneyBoard), NFC, Settings, launcher, wallpapers.
+# Everything listed here can be reinstalled from Play Store / Galaxy Store if wanted.
+
+# China / HK specific
+app/Kaiti
+app/Miao
+app/ShaoNv
+priv-app/SecSoterService
+priv-app/SoterSskdsSerivce
+priv-app/SVoiceIME
+# AR Emoji / stickers
+priv-app/AREmoji
+priv-app/StickerFaceARAvatar
+app/ARDrawing
+app/ARZone
+priv-app/LiveStickers
+priv-app/StickerCenter
+# Microsoft / Facebook preinstalls
+priv-app/OneDrive_Samsung_v3
+priv-app/Excel_SamsungStub
+priv-app/PowerPoint_SamsungStub
+priv-app/Word_SamsungStub
+priv-app/LinkedIn_SamsungStub
+priv-app/YourPhone_Stub
+priv-app/LinkToWindowsService
+app/Facebook_stub
+app/FBAppManager_NS
+priv-app/FBInstaller_NS
+priv-app/FBServices
+# Live-focus viewers of the S9 dual camera (S8 has a single rear camera)
+priv-app/DualOutFocusViewer_Q
+priv-app/SingleOutFocusViewer_Q
+priv-app/SelectiveFocusViewer_Q
+# DeX desktop mode
+priv-app/SystemUIDesktop
+priv-app/DesktopModeUiService
+priv-app/KnoxDesktopLauncher
+priv-app/DeXonPC
+# Bixby
+app/BixbyWakeup
+priv-app/BixbyService
+priv-app/Bixby
+priv-app/BixbyAgentStub
+priv-app/SettingsBixby
+priv-app/SystemUIBixby2
+app/SamsungDaily
+app/VisionIntelligence2_stub
+app/VisionARApps_stub
+# Misc bloat
+app/FlipboardBriefing
+app/StoryEditor_Dream_N
+app/VideoEditorLite_Dream_N
+app/SmartReminder
+priv-app/GameHome
+priv-app/GameTools_Dream
+priv-app/Tips
+priv-app/MateAgent
+app/HiyaService
+priv-app/GearVRService
+app/KidsHome_Installer
+# Google apps that are reinstallable from Play Store
+priv-app/Velvet
+app/YouTube
+# FM radio: the SCV36 has no FM chip (ISDB-T tuner on those pins)
+priv-app/HybridRadio
+# Gallery AI tagger: needs the S9 /vendor/saiv image-understanding models through the T835 SNAP HAL -> crash loop
+priv-app/IPService

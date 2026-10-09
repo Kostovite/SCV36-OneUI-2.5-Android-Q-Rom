@@ -1,0 +1,2471 @@
+diff --git a/drivers/gpu/msm/Kconfig b/drivers/gpu/msm/Kconfig
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/Makefile b/drivers/gpu/msm/Makefile
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/a3xx_reg.h b/drivers/gpu/msm/a3xx_reg.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/a4xx_reg.h b/drivers/gpu/msm/a4xx_reg.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/a5xx_reg.h b/drivers/gpu/msm/a5xx_reg.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno-gpulist.h b/drivers/gpu/msm/adreno-gpulist.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno.c b/drivers/gpu/msm/adreno.c
+old mode 100644
+new mode 100755
+index 580450d51..3e041289d
+--- a/drivers/gpu/msm/adreno.c
++++ b/drivers/gpu/msm/adreno.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -45,7 +45,6 @@
+ #include <linux/sti/abc_common.h>
+ #endif
+ 
+-#include <soc/qcom/boot_stats.h>
+ 
+ #undef MODULE_PARAM_PREFIX
+ #define MODULE_PARAM_PREFIX "adreno."
+@@ -1056,9 +1055,6 @@ static int adreno_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ #endif
+-
+-	place_marker("M - DRIVER GPU Ready");
+-
+ out:
+ 	if (status) {
+ 		adreno_ringbuffer_close(adreno_dev);
+@@ -2831,8 +2827,7 @@ static void adreno_suspend_device(struct kgsl_device *device,
+ 	struct adreno_gpudev *gpudev = ADRENO_GPU_DEVICE(adreno_dev);
+ 	int pm_event = pm_state.event;
+ 
+-	if (device->state == KGSL_STATE_SUSPEND)
+-		adreno_dispatcher_halt(device);
++	adreno_dispatcher_halt(device);
+ 
+ 	if ((pm_event == PM_EVENT_FREEZE) ||
+ 		(pm_event == PM_EVENT_QUIESCE) ||
+@@ -2846,19 +2841,6 @@ static void adreno_resume_device(struct kgsl_device *device)
+ 	adreno_dispatcher_unhalt(device);
+ }
+ 
+-u32 adreno_get_ucode_version(const u32 *data)
+-{
+-	u32 version;
+-
+-	version = data[1];
+-
+-	if ((version & 0xf) != 0xa)
+-		return version;
+-
+-	version &= ~0xfff;
+-	return  version | ((data[3] & 0xfff000) >> 12);
+-}
+-
+ static const struct kgsl_functable adreno_functable = {
+ 	/* Mandatory functions */
+ 	.regread = adreno_regread,
+diff --git a/drivers/gpu/msm/adreno.h b/drivers/gpu/msm/adreno.h
+old mode 100644
+new mode 100755
+index 5434cfb40..1f598bf3d
+--- a/drivers/gpu/msm/adreno.h
++++ b/drivers/gpu/msm/adreno.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2008-2018,2020 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2008-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -942,8 +942,6 @@ int adreno_efuse_read_u32(struct adreno_device *adreno_dev, unsigned int offset,
+ 		unsigned int *val);
+ void adreno_efuse_unmap(struct adreno_device *adreno_dev);
+ 
+-u32 adreno_get_ucode_version(const u32 *data);
+-
+ #define ADRENO_TARGET(_name, _id) \
+ static inline int adreno_is_##_name(struct adreno_device *adreno_dev) \
+ { \
+diff --git a/drivers/gpu/msm/adreno_a3xx.c b/drivers/gpu/msm/adreno_a3xx.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a3xx.h b/drivers/gpu/msm/adreno_a3xx.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a3xx_snapshot.c b/drivers/gpu/msm/adreno_a3xx_snapshot.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a4xx.c b/drivers/gpu/msm/adreno_a4xx.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a4xx.h b/drivers/gpu/msm/adreno_a4xx.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a4xx_preempt.c b/drivers/gpu/msm/adreno_a4xx_preempt.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a4xx_snapshot.c b/drivers/gpu/msm/adreno_a4xx_snapshot.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a5xx.c b/drivers/gpu/msm/adreno_a5xx.c
+old mode 100644
+new mode 100755
+index c206bdac7..2514d13b4
+--- a/drivers/gpu/msm/adreno_a5xx.c
++++ b/drivers/gpu/msm/adreno_a5xx.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014-2018,2020 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -2177,15 +2177,12 @@ static int a5xx_post_start(struct adreno_device *adreno_dev)
+ 		*cmds++ = 0xF;
+ 	}
+ 
+-	if (adreno_is_preemption_enabled(adreno_dev)) {
++	if (adreno_is_preemption_enabled(adreno_dev))
+ 		cmds += _preemption_init(adreno_dev, rb, cmds, NULL);
+-		rb->_wptr = rb->_wptr - (42 - (cmds - start));
+-		ret = adreno_ringbuffer_submit_spin_nosync(rb, NULL, 2000);
+-	} else {
+-		rb->_wptr = rb->_wptr - (42 - (cmds - start));
+-		ret = adreno_ringbuffer_submit_spin(rb, NULL, 2000);
+-	}
+ 
++	rb->_wptr = rb->_wptr - (42 - (cmds - start));
++
++	ret = adreno_ringbuffer_submit_spin(rb, NULL, 2000);
+ 	if (ret)
+ 		spin_idle_debug(KGSL_DEVICE(adreno_dev),
+ 				"hw initialization failed to idle\n");
+@@ -2557,7 +2554,7 @@ static int _load_firmware(struct kgsl_device *device, const char *fwfile,
+ 
+ 	memcpy(ucode->hostptr, &fw->data[4], fw->size - 4);
+ 	*ucode_size = (fw->size - 4) / sizeof(uint32_t);
+-	*ucode_version = adreno_get_ucode_version((u32 *)fw->data);
++	*ucode_version = *(unsigned int *)&fw->data[4];
+ 
+ done:
+ 	release_firmware(fw);
+diff --git a/drivers/gpu/msm/adreno_a5xx.h b/drivers/gpu/msm/adreno_a5xx.h
+old mode 100644
+new mode 100755
+index 8cfd297fa..08fd16a83
+--- a/drivers/gpu/msm/adreno_a5xx.h
++++ b/drivers/gpu/msm/adreno_a5xx.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2015-2016,2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -112,7 +112,7 @@ void a5xx_crashdump_init(struct adreno_device *adreno_dev);
+ 
+ void a5xx_hwcg_set(struct adreno_device *adreno_dev, bool on);
+ 
+-#define A5XX_CP_RB_CNTL_DEFAULT ((1 << 27) | ((ilog2(4) << 8) & 0x1F00) | \
++#define A5XX_CP_RB_CNTL_DEFAULT (((ilog2(4) << 8) & 0x1F00) | \
+ 		(ilog2(KGSL_RB_DWORDS >> 1) & 0x3F))
+ /* GPMU interrupt multiplexor */
+ #define FW_INTR_INFO			(0)
+diff --git a/drivers/gpu/msm/adreno_a5xx_packets.h b/drivers/gpu/msm/adreno_a5xx_packets.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a5xx_preempt.c b/drivers/gpu/msm/adreno_a5xx_preempt.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_a5xx_snapshot.c b/drivers/gpu/msm/adreno_a5xx_snapshot.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_compat.c b/drivers/gpu/msm/adreno_compat.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_compat.h b/drivers/gpu/msm/adreno_compat.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_coresight.c b/drivers/gpu/msm/adreno_coresight.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_cp_parser.c b/drivers/gpu/msm/adreno_cp_parser.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_cp_parser.h b/drivers/gpu/msm/adreno_cp_parser.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_debugfs.c b/drivers/gpu/msm/adreno_debugfs.c
+old mode 100644
+new mode 100755
+index 201e63f5e..2027ac66f
+--- a/drivers/gpu/msm/adreno_debugfs.c
++++ b/drivers/gpu/msm/adreno_debugfs.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2008-2017,2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2008-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -281,7 +281,7 @@ static int ctx_print(struct seq_file *s, void *unused)
+ 		   ctx_type_str(drawctxt->type),
+ 		   drawctxt->base.priority,
+ 		   drawctxt->base.proc_priv->comm,
+-		   pid_nr(drawctxt->base.proc_priv->pid),
++		   drawctxt->base.proc_priv->pid,
+ 		   drawctxt->base.tid);
+ 
+ 	seq_puts(s, "flags: ");
+diff --git a/drivers/gpu/msm/adreno_dispatch.c b/drivers/gpu/msm/adreno_dispatch.c
+old mode 100644
+new mode 100755
+index 3eca9bdca..6dd9f6040
+--- a/drivers/gpu/msm/adreno_dispatch.c
++++ b/drivers/gpu/msm/adreno_dispatch.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -1405,22 +1405,6 @@ int adreno_dispatcher_queue_cmds(struct kgsl_device_private *dev_priv,
+ 
+ 	user_ts = *timestamp;
+ 
+-	/*
+-	 * If there is only one drawobj in the array and it is of
+-	 * type SYNCOBJ_TYPE, skip comparing user_ts as it can be 0
+-	 */
+-	if (!(count == 1 && drawobj[0]->type == SYNCOBJ_TYPE) &&
+-		(drawctxt->base.flags & KGSL_CONTEXT_USER_GENERATED_TS)) {
+-		/*
+-		 * User specified timestamps need to be greater than the last
+-		 * issued timestamp in the context
+-		 */
+-		if (timestamp_cmp(drawctxt->timestamp, user_ts) >= 0) {
+-			spin_unlock(&drawctxt->lock);
+-			return -ERANGE;
+-		}
+-	}
+-
+ 	for (i = 0; i < count; i++) {
+ 
+ 		switch (drawobj[i]->type) {
+@@ -1695,7 +1679,7 @@ static inline const char *_kgsl_context_comm(struct kgsl_context *context)
+ #define pr_fault(_d, _c, fmt, args...) \
+ 		dev_err((_d)->dev, "%s[%d]: " fmt, \
+ 		_kgsl_context_comm((_c)->context), \
+-		pid_nr((_c)->context->proc_priv->pid), ##args)
++		(_c)->context->proc_priv->pid, ##args)
+ 
+ 
+ static void adreno_fault_header(struct kgsl_device *device,
+@@ -1726,9 +1710,8 @@ static void adreno_fault_header(struct kgsl_device *device,
+ 			ib2base, ib2sz, drawctxt->rb->id);
+ 
+ 		pr_fault(device, drawobj,
+-			"gpu fault ctx %d ctx_type %s ts %d status %8.8X rb %4.4x/%4.4x ib1 %16.16llX/%4.4x ib2 %16.16llX/%4.4x\n",
+-			drawobj->context->id, get_api_type_str(drawctxt->type),
+-			drawobj->timestamp, status,
++			"gpu fault ctx %d ts %d status %8.8X rb %4.4x/%4.4x ib1 %16.16llX/%4.4x ib2 %16.16llX/%4.4x\n",
++			drawobj->context->id, drawobj->timestamp, status,
+ 			rptr, wptr, ib1base, ib1sz, ib2base, ib2sz);
+ 
+ 		if (rb != NULL)
+diff --git a/drivers/gpu/msm/adreno_dispatch.h b/drivers/gpu/msm/adreno_dispatch.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_drawctxt.c b/drivers/gpu/msm/adreno_drawctxt.c
+old mode 100644
+new mode 100755
+index 0b2eb3dd8..3e765a61b
+--- a/drivers/gpu/msm/adreno_drawctxt.c
++++ b/drivers/gpu/msm/adreno_drawctxt.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -473,12 +473,11 @@ void adreno_drawctxt_detach(struct kgsl_context *context)
+ 	drawctxt = ADRENO_CONTEXT(context);
+ 	rb = drawctxt->rb;
+ 
+-	spin_lock(&drawctxt->lock);
+-
+ 	spin_lock(&adreno_dev->active_list_lock);
+ 	list_del_init(&drawctxt->active_node);
+ 	spin_unlock(&adreno_dev->active_list_lock);
+ 
++	spin_lock(&drawctxt->lock);
+ 	count = drawctxt_detach_drawobjs(drawctxt, list);
+ 	spin_unlock(&drawctxt->lock);
+ 
+diff --git a/drivers/gpu/msm/adreno_drawctxt.h b/drivers/gpu/msm/adreno_drawctxt.h
+old mode 100644
+new mode 100755
+index 941a765e4..07108eaf5
+--- a/drivers/gpu/msm/adreno_drawctxt.h
++++ b/drivers/gpu/msm/adreno_drawctxt.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2018, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -138,16 +138,4 @@ void adreno_drawctxt_invalidate(struct kgsl_device *device,
+ void adreno_drawctxt_dump(struct kgsl_device *device,
+ 		struct kgsl_context *context);
+ 
+-static struct adreno_context_type ctxt_type_table[] = {KGSL_CONTEXT_TYPES};
+-
+-static inline const char *get_api_type_str(unsigned int type)
+-{
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(ctxt_type_table); i++) {
+-		if (ctxt_type_table[i].type == type)
+-			return ctxt_type_table[i].str;
+-	}
+-	return "UNKNOWN";
+-}
+ #endif  /* __ADRENO_DRAWCTXT_H */
+diff --git a/drivers/gpu/msm/adreno_ioctl.c b/drivers/gpu/msm/adreno_ioctl.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_iommu.c b/drivers/gpu/msm/adreno_iommu.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_iommu.h b/drivers/gpu/msm/adreno_iommu.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_perfcounter.c b/drivers/gpu/msm/adreno_perfcounter.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_perfcounter.h b/drivers/gpu/msm/adreno_perfcounter.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_pm4types.h b/drivers/gpu/msm/adreno_pm4types.h
+old mode 100644
+new mode 100755
+index fdd12f571..ec2c29b92
+--- a/drivers/gpu/msm/adreno_pm4types.h
++++ b/drivers/gpu/msm/adreno_pm4types.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2016,2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -97,8 +97,6 @@
+ /* A5XX Enable yield in RB only */
+ #define CP_YIELD_ENABLE 0x1C
+ 
+-#define CP_WHERE_AM_I 0x62
+-
+ /* Enable/Disable/Defer A5x global preemption model */
+ #define CP_PREEMPT_ENABLE_GLOBAL    0x69
+ 
+diff --git a/drivers/gpu/msm/adreno_profile.c b/drivers/gpu/msm/adreno_profile.c
+old mode 100644
+new mode 100755
+index 93501d96e..d8af520b2
+--- a/drivers/gpu/msm/adreno_profile.c
++++ b/drivers/gpu/msm/adreno_profile.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2013-2016, 2018,2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -78,6 +78,18 @@
+ #define SIZE_PIPE_ENTRY(cnt) (50 + (cnt) * 62)
+ #define SIZE_LOG_ENTRY(cnt) (6 + (cnt) * 5)
+ 
++static struct adreno_context_type ctxt_type_table[] = {KGSL_CONTEXT_TYPES};
++
++static const char *get_api_type_str(unsigned int type)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(ctxt_type_table) - 1; i++) {
++		if (ctxt_type_table[i].type == type)
++			return ctxt_type_table[i].str;
++	}
++	return "UNKNOWN";
++}
++
+ static inline uint _ib_start(struct adreno_device *adreno_dev,
+ 			 unsigned int *cmds)
+ {
+@@ -168,7 +180,7 @@ static int _build_pre_ib_cmds(struct adreno_device *adreno_dev,
+ 	ibcmds += _ib_cmd_mem_write(adreno_dev, ibcmds, gpuaddr + data_offset,
+ 			drawctxt->base.id, &data_offset);
+ 	ibcmds += _ib_cmd_mem_write(adreno_dev, ibcmds, gpuaddr + data_offset,
+-			pid_nr(drawctxt->base.proc_priv->pid), &data_offset);
++			drawctxt->base.proc_priv->pid, &data_offset);
+ 	ibcmds += _ib_cmd_mem_write(adreno_dev, ibcmds, gpuaddr + data_offset,
+ 			drawctxt->base.tid, &data_offset);
+ 	ibcmds += _ib_cmd_mem_write(adreno_dev, ibcmds, gpuaddr + data_offset,
+diff --git a/drivers/gpu/msm/adreno_profile.h b/drivers/gpu/msm/adreno_profile.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_ringbuffer.c b/drivers/gpu/msm/adreno_ringbuffer.c
+old mode 100644
+new mode 100755
+index 475e5e601..65e733568
+--- a/drivers/gpu/msm/adreno_ringbuffer.c
++++ b/drivers/gpu/msm/adreno_ringbuffer.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2017,2019-2020 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -138,7 +138,7 @@ void adreno_ringbuffer_submit(struct adreno_ringbuffer *rb,
+ 	adreno_ringbuffer_wptr(adreno_dev, rb);
+ }
+ 
+-int adreno_ringbuffer_submit_spin_nosync(struct adreno_ringbuffer *rb,
++int adreno_ringbuffer_submit_spin(struct adreno_ringbuffer *rb,
+ 		struct adreno_submit_time *time, unsigned int timeout)
+ {
+ 	struct adreno_device *adreno_dev = ADRENO_RB_DEVICE(rb);
+@@ -147,38 +147,6 @@ int adreno_ringbuffer_submit_spin_nosync(struct adreno_ringbuffer *rb,
+ 	return adreno_spin_idle(adreno_dev, timeout);
+ }
+ 
+-/*
+- * adreno_ringbuffer_submit_spin() - Submit the cmds and wait until GPU is idle
+- * @rb: Pointer to ringbuffer
+- * @time: Pointer to adreno_submit_time
+- * @timeout: timeout value in ms
+- *
+- * Add commands to the ringbuffer and wait until GPU goes to idle. This routine
+- * inserts a WHERE_AM_I packet to trigger a shadow rptr update. So, use
+- * adreno_ringbuffer_submit_spin_nosync() if the previous cmd in the RB is a
+- * CSY packet because CSY followed by WHERE_AM_I is not legal..
+- */
+-int adreno_ringbuffer_submit_spin(struct adreno_ringbuffer *rb,
+-		struct adreno_submit_time *time, unsigned int timeout)
+-{
+-	struct adreno_device *adreno_dev = ADRENO_RB_DEVICE(rb);
+-	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+-	unsigned int *cmds;
+-
+-	if (adreno_is_a3xx(adreno_dev))
+-		return adreno_ringbuffer_submit_spin_nosync(rb, time, timeout);
+-
+-	cmds = adreno_ringbuffer_allocspace(rb, 3);
+-	if (IS_ERR(cmds))
+-		return PTR_ERR(cmds);
+-
+-	*cmds++ = cp_packet(adreno_dev, CP_WHERE_AM_I, 2);
+-	cmds += cp_gpuaddr(adreno_dev, cmds,
+-			SCRATCH_RPTR_GPU_ADDR(device, rb->id));
+-
+-	return adreno_ringbuffer_submit_spin_nosync(rb, time, timeout);
+-}
+-
+ unsigned int *adreno_ringbuffer_allocspace(struct adreno_ringbuffer *rb,
+ 		unsigned int dwords)
+ {
+@@ -291,11 +259,6 @@ static int _adreno_ringbuffer_probe(struct adreno_device *adreno_dev,
+ 		PAGE_SIZE, 0, KGSL_MEMDESC_PRIVILEGED, "pagetable_desc");
+ 	if (ret)
+ 		return ret;
+-
+-	/* allocate a chunk of memory to create user profiling IB1s */
+-	kgsl_allocate_global(KGSL_DEVICE(adreno_dev), &rb->profile_desc,
+-		PAGE_SIZE, KGSL_MEMFLAGS_GPUREADONLY, 0, "profile_desc");
+-
+ 	return kgsl_allocate_global(KGSL_DEVICE(adreno_dev), &rb->buffer_desc,
+ 			KGSL_RB_SIZE, KGSL_MEMFLAGS_GPUREADONLY,
+ 			0, "ringbuffer");
+@@ -305,12 +268,11 @@ int adreno_ringbuffer_probe(struct adreno_device *adreno_dev, bool nopreempt)
+ {
+ 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+ 	struct adreno_gpudev *gpudev = ADRENO_GPU_DEVICE(adreno_dev);
+-	unsigned int priv = KGSL_MEMDESC_RANDOM | KGSL_MEMDESC_PRIVILEGED;
+ 	int i, status;
+ 
+ 	if (!adreno_is_a3xx(adreno_dev)) {
+ 		status = kgsl_allocate_global(device, &device->scratch,
+-				PAGE_SIZE, 0, priv, "scratch");
++				PAGE_SIZE, 0, 0, "scratch");
+ 		if (status != 0)
+ 			return status;
+ 	}
+@@ -341,7 +303,7 @@ static void _adreno_ringbuffer_close(struct adreno_device *adreno_dev,
+ 
+ 	kgsl_free_global(device, &rb->pagetable_desc);
+ 	kgsl_free_global(device, &rb->preemption_desc);
+-	kgsl_free_global(device, &rb->profile_desc);
++
+ 	kgsl_free_global(device, &rb->buffer_desc);
+ 	kgsl_del_event_group(&rb->events);
+ 	memset(rb, 0, sizeof(struct adreno_ringbuffer));
+@@ -513,8 +475,6 @@ adreno_ringbuffer_addcmds(struct adreno_ringbuffer *rb,
+ 	if (gpudev->preemption_post_ibsubmit &&
+ 				adreno_is_preemption_enabled(adreno_dev))
+ 		total_sizedwords += 5;
+-	else if (!adreno_is_a3xx(adreno_dev))
+-		total_sizedwords += 3;
+ 
+ 	/*
+ 	 * a5xx uses 64 bit memory address. pm4 commands that involve read/write
+@@ -705,11 +665,6 @@ adreno_ringbuffer_addcmds(struct adreno_ringbuffer *rb,
+ 				adreno_is_preemption_enabled(adreno_dev))
+ 		ringcmds += gpudev->preemption_post_ibsubmit(adreno_dev,
+ 			ringcmds);
+-	else if (!adreno_is_a3xx(adreno_dev)) {
+-		*ringcmds++ = cp_packet(adreno_dev, CP_WHERE_AM_I, 2);
+-		ringcmds += cp_gpuaddr(adreno_dev, ringcmds,
+-				SCRATCH_RPTR_GPU_ADDR(device, rb->id));
+-	}
+ 
+ 	/*
+ 	 * If we have more ringbuffer commands than space reserved
+@@ -782,37 +737,6 @@ static inline int _get_alwayson_counter(struct adreno_device *adreno_dev,
+ 	return (unsigned int)(p - cmds);
+ }
+ 
+-/* This is the maximum possible size for 64 bit targets */
+-#define PROFILE_IB_DWORDS 4
+-#define PROFILE_IB_SLOTS (PAGE_SIZE / (PROFILE_IB_DWORDS << 2))
+-
+-static int set_user_profiling(struct adreno_device *adreno_dev,
+-		struct adreno_ringbuffer *rb, u32 *cmds, u64 gpuaddr)
+-{
+-	int dwords, index = 0;
+-	u64 ib_gpuaddr;
+-	u32 *ib;
+-
+-	if (!rb->profile_desc.hostptr)
+-		return 0;
+-
+-	ib = ((u32 *) rb->profile_desc.hostptr) +
+-		(rb->profile_index * PROFILE_IB_DWORDS);
+-	ib_gpuaddr = rb->profile_desc.gpuaddr +
+-		(rb->profile_index * (PROFILE_IB_DWORDS << 2));
+-
+-	dwords = _get_alwayson_counter(adreno_dev, ib, gpuaddr);
+-
+-	/* Make an indirect buffer for the request */
+-	cmds[index++] = cp_mem_packet(adreno_dev, CP_INDIRECT_BUFFER_PFE, 2, 1);
+-	index += cp_gpuaddr(adreno_dev, &cmds[index], ib_gpuaddr);
+-	cmds[index++] = dwords;
+-
+-	rb->profile_index = (rb->profile_index + 1) % PROFILE_IB_SLOTS;
+-
+-	return index;
+-}
+-
+ /* adreno_rindbuffer_submitcmd - submit userspace IBs to the GPU */
+ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
+ 		struct kgsl_drawobj_cmd *cmdobj,
+@@ -912,12 +836,14 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
+ 	if (drawobj->flags & KGSL_DRAWOBJ_PROFILING &&
+ 		!adreno_is_a3xx(adreno_dev) && profile_buffer) {
+ 		user_profiling = true;
++		dwords += 6;
+ 
+ 		/*
+-		 * User side profiling uses two IB1s, one before with 4 dwords
+-		 * per INDIRECT_BUFFER_PFE call
++		 * REG_TO_MEM packet on A5xx and above needs another ordinal.
++		 * Add 2 more dwords since we do profiling before and after.
+ 		 */
+-		dwords += 8;
++		if (!ADRENO_LEGACY_PM4(adreno_dev))
++			dwords += 2;
+ 
+ 		/*
+ 		 * we want to use an adreno_submit_time struct to get the
+@@ -960,11 +886,11 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
+ 	}
+ 
+ 	/*
+-	 * Add IB1 to read the GPU ticks at the start of command obj and
++	 * Add cmds to read the GPU ticks at the start of command obj and
+ 	 * write it into the appropriate command obj profiling buffer offset
+ 	 */
+ 	if (user_profiling) {
+-		cmds += set_user_profiling(adreno_dev, rb, cmds,
++		cmds += _get_alwayson_counter(adreno_dev, cmds,
+ 			cmdobj->profiling_buffer_gpuaddr +
+ 			offsetof(struct kgsl_drawobj_profiling_buffer,
+ 			gpu_ticks_submitted));
+@@ -1003,11 +929,11 @@ int adreno_ringbuffer_submitcmd(struct adreno_device *adreno_dev,
+ 	}
+ 
+ 	/*
+-	 * Add IB1 to read the GPU ticks at the end of command obj and
++	 * Add cmds to read the GPU ticks at the end of command obj and
+ 	 * write it into the appropriate command obj profiling buffer offset
+ 	 */
+ 	if (user_profiling) {
+-		cmds += set_user_profiling(adreno_dev, rb, cmds,
++		cmds += _get_alwayson_counter(adreno_dev, cmds,
+ 			cmdobj->profiling_buffer_gpuaddr +
+ 			offsetof(struct kgsl_drawobj_profiling_buffer,
+ 			gpu_ticks_retired));
+diff --git a/drivers/gpu/msm/adreno_ringbuffer.h b/drivers/gpu/msm/adreno_ringbuffer.h
+old mode 100644
+new mode 100755
+index a2bf92acf..63374af1e
+--- a/drivers/gpu/msm/adreno_ringbuffer.h
++++ b/drivers/gpu/msm/adreno_ringbuffer.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2016,2019-2020 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -127,18 +127,6 @@ struct adreno_ringbuffer {
+ 	unsigned long sched_timer;
+ 	enum adreno_dispatcher_starve_timer_states starve_timer_state;
+ 	spinlock_t preempt_lock;
+-	/**
+-	 * @profile_desc: global memory to construct IB1s to do user side
+-	 * profiling
+-	 */
+-	struct kgsl_memdesc profile_desc;
+-	/**
+-	 * @profile_index: Pointer to the next "slot" in profile_desc for a user
+-	 * profiling IB1.  This allows for PAGE_SIZE / 16 = 256 simultaneous
+-	 * commands per ringbuffer with user profiling enabled
+-	 * enough.
+-	 */
+-	u32 profile_index;
+ };
+ 
+ /* Returns the current ringbuffer */
+@@ -172,9 +160,6 @@ int adreno_ringbuffer_issuecmds(struct adreno_ringbuffer *rb,
+ void adreno_ringbuffer_submit(struct adreno_ringbuffer *rb,
+ 		struct adreno_submit_time *time);
+ 
+-int adreno_ringbuffer_submit_spin_nosync(struct adreno_ringbuffer *rb,
+-		struct adreno_submit_time *time, unsigned int timeout);
+-
+ int adreno_ringbuffer_submit_spin(struct adreno_ringbuffer *rb,
+ 		struct adreno_submit_time *time, unsigned int timeout);
+ 
+diff --git a/drivers/gpu/msm/adreno_snapshot.c b/drivers/gpu/msm/adreno_snapshot.c
+old mode 100644
+new mode 100755
+index 3cf601f3b..6392ec1f0
+--- a/drivers/gpu/msm/adreno_snapshot.c
++++ b/drivers/gpu/msm/adreno_snapshot.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -70,19 +70,6 @@ void kgsl_snapshot_push_object(struct kgsl_process_private *process,
+ 	for (index = 0; index < objbufptr; index++) {
+ 		if (objbuf[index].gpuaddr == gpuaddr &&
+ 			objbuf[index].entry->priv == process) {
+-			/*
+-			 * Check if newly requested size is within the
+-			 * allocated range or not, otherwise continue
+-			 * with previous size.
+-			 */
+-			if (!kgsl_gpuaddr_in_memdesc(
+-				&objbuf[index].entry->memdesc,
+-				gpuaddr, dwords << 2)) {
+-				KGSL_CORE_ERR(
+-					"snapshot: IB 0x%016llx size is not within the memdesc range\n",
+-					gpuaddr);
+-				return;
+-			}
+ 
+ 			objbuf[index].size = max_t(uint64_t,
+ 						objbuf[index].size,
+diff --git a/drivers/gpu/msm/adreno_snapshot.h b/drivers/gpu/msm/adreno_snapshot.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_sysfs.c b/drivers/gpu/msm/adreno_sysfs.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_trace.c b/drivers/gpu/msm/adreno_trace.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/adreno_trace.h b/drivers/gpu/msm/adreno_trace.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl.c b/drivers/gpu/msm/kgsl.c
+old mode 100644
+new mode 100755
+index 8cd21afbe..4ea4ea3bf
+--- a/drivers/gpu/msm/kgsl.c
++++ b/drivers/gpu/msm/kgsl.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2008-2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2008-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -270,7 +270,6 @@ kgsl_mem_entry_create(void)
+ 		/* put this ref in the caller functions after init */
+ 		kref_get(&entry->refcount);
+ 	}
+-	atomic_set(&entry->map_count, 0);
+ 	return entry;
+ }
+ #ifdef CONFIG_DMA_SHARED_BUFFER
+@@ -333,7 +332,7 @@ kgsl_mem_entry_destroy(struct kref *kref)
+ 			    entry->memdesc.sgt->nents, i) {
+ 			page = sg_page(sg);
+ 			for (j = 0; j < (sg->length >> PAGE_SHIFT); j++)
+-				set_page_dirty_lock(nth_page(page, j));
++				set_page_dirty(nth_page(page, j));
+ 		}
+ 	}
+ 
+@@ -537,21 +536,14 @@ int kgsl_context_init(struct kgsl_device_private *dev_priv,
+ 	int ret = 0, id;
+ 	struct kgsl_process_private  *proc_priv = dev_priv->process_priv;
+ 
+-	/*
+-	 * Read and increment the context count under lock to make sure
+-	 * no process goes beyond the specified context limit.
+-	 */
+-	spin_lock(&proc_priv->ctxt_count_lock);
+ 	if (atomic_read(&proc_priv->ctxt_count) > KGSL_MAX_CONTEXTS_PER_PROC) {
+-		KGSL_DRV_ERR_RATELIMIT(device,
++		KGSL_DRV_ERR(device,
+ 			"Per process context limit reached for pid %u",
+-			pid_nr(dev_priv->process_priv->pid));
+-		spin_unlock(&proc_priv->ctxt_count_lock);
++			dev_priv->process_priv->pid);
+ 		return -ENOSPC;
+ 	}
+ 
+ 	atomic_inc(&proc_priv->ctxt_count);
+-	spin_unlock(&proc_priv->ctxt_count_lock);
+ 
+ 	id = _kgsl_get_context_id(device);
+ 	if (id == -ENOSPC) {
+@@ -880,7 +872,6 @@ static void kgsl_destroy_process_private(struct kref *kref)
+ 	struct kgsl_process_private *private = container_of(kref,
+ 			struct kgsl_process_private, refcount);
+ 
+-	put_pid(private->pid);
+ 	idr_destroy(&private->mem_idr);
+ 	idr_destroy(&private->syncsource_idr);
+ 
+@@ -911,7 +902,7 @@ struct kgsl_process_private *kgsl_process_private_find(pid_t pid)
+ 
+ 	mutex_lock(&kgsl_driver.process_mutex);
+ 	list_for_each_entry(p, &kgsl_driver.process_list, list) {
+-		if (pid_nr(p->pid) == pid) {
++		if (p->pid == pid) {
+ 			if (kgsl_process_private_get(p))
+ 				private = p;
+ 			break;
+@@ -925,52 +916,40 @@ static struct kgsl_process_private *kgsl_process_private_new(
+ 		struct kgsl_device *device)
+ {
+ 	struct kgsl_process_private *private;
+-	struct pid *cur_pid = get_task_pid(current->group_leader, PIDTYPE_PID);
++	pid_t tgid = task_tgid_nr(current);
+ 
+ 	/* Search in the process list */
+ 	list_for_each_entry(private, &kgsl_driver.process_list, list) {
+-		if (private->pid == cur_pid) {
+-			if (!kgsl_process_private_get(private)) {
++		if (private->pid == tgid) {
++			if (!kgsl_process_private_get(private))
+ 				private = ERR_PTR(-EINVAL);
+-			}
+-			/*
+-			 * We need to hold only one reference to the PID for
+-			 * each process struct to avoid overflowing the
+-			 * reference counter which can lead to use-after-free.
+-			 */
+-			put_pid(cur_pid);
+ 			return private;
+ 		}
+ 	}
+ 
+ 	/* Create a new object */
+ 	private = kzalloc(sizeof(struct kgsl_process_private), GFP_KERNEL);
+-	if (private == NULL) {
+-		put_pid(cur_pid);
++	if (private == NULL)
+ 		return ERR_PTR(-ENOMEM);
+-	}
+ 
+ 	kref_init(&private->refcount);
+ 
+-	private->pid = cur_pid;
++	private->pid = tgid;
+ 	get_task_comm(private->comm, current->group_leader);
+ 
+ 	spin_lock_init(&private->mem_lock);
+ 	spin_lock_init(&private->syncsource_lock);
+-	spin_lock_init(&private->ctxt_count_lock);
+ 
+ 	idr_init(&private->mem_idr);
+ 	idr_init(&private->syncsource_idr);
+ 
+ 	/* Allocate a pagetable for the new process object */
+-	private->pagetable = kgsl_mmu_getpagetable(&device->mmu,
+-							pid_nr(cur_pid));
++	private->pagetable = kgsl_mmu_getpagetable(&device->mmu, tgid);
+ 	if (IS_ERR(private->pagetable)) {
+ 		int err = PTR_ERR(private->pagetable);
+ 
+ 		idr_destroy(&private->mem_idr);
+ 		idr_destroy(&private->syncsource_idr);
+-		put_pid(private->pid);
+ 
+ 		kfree(private);
+ 		private = ERR_PTR(err);
+@@ -1438,45 +1417,6 @@ long kgsl_ioctl_device_getproperty(struct kgsl_device_private *dev_priv,
+ 		kgsl_context_put(context);
+ 		break;
+ 	}
+-	case KGSL_PROP_SECURE_BUFFER_ALIGNMENT:
+-	{
+-		unsigned int align;
+-
+-		if (param->sizebytes != sizeof(unsigned int)) {
+-			result = -EINVAL;
+-			break;
+-		}
+-		/*
+-		 * XPUv2 impose the constraint of 1MB memory alignment,
+-		 * on the other hand Hypervisor does not have such
+-		 * constraints. So driver should fulfill such
+-		 * requirements when allocating secure memory.
+-		 */
+-		align = MMU_FEATURE(&dev_priv->device->mmu,
+-				KGSL_MMU_HYP_SECURE_ALLOC) ? PAGE_SIZE : SZ_1M;
+-
+-		if (copy_to_user(param->value, &align, sizeof(align)))
+-			result = -EFAULT;
+-
+-		break;
+-	}
+-	case KGSL_PROP_SECURE_CTXT_SUPPORT:
+-	{
+-		unsigned int secure_ctxt;
+-
+-		if (param->sizebytes != sizeof(unsigned int)) {
+-			result = -EINVAL;
+-			break;
+-		}
+-
+-		secure_ctxt = dev_priv->device->mmu.secured ? 1 : 0;
+-
+-		if (copy_to_user(param->value, &secure_ctxt,
+-				sizeof(secure_ctxt)))
+-			result = -EFAULT;
+-
+-		break;
+-	}
+ 	default:
+ 		if (is_compat_task())
+ 			result = dev_priv->device->ftbl->getproperty_compat(
+@@ -1907,9 +1847,8 @@ static long gpumem_free_entry(struct kgsl_mem_entry *entry)
+ 	if (entry->memdesc.pagetable != NULL)
+ 		ptname = entry->memdesc.pagetable->name;
+ 
+-	kgsl_memfree_add(pid_nr(entry->priv->pid), ptname,
+-			entry->memdesc.gpuaddr,	entry->memdesc.size,
+-			entry->memdesc.flags);
++	kgsl_memfree_add(entry->priv->pid, ptname, entry->memdesc.gpuaddr,
++		entry->memdesc.size, entry->memdesc.flags);
+ 
+ 	kgsl_mem_entry_put(entry);
+ 
+@@ -2122,6 +2061,13 @@ long kgsl_ioctl_cmdstream_freememontimestamp_ctxtid(
+ 	return ret;
+ }
+ 
++static inline int _check_region(unsigned long start, unsigned long size,
++				uint64_t len)
++{
++	uint64_t end = ((uint64_t) start) + size;
++	return (end > len);
++}
++
+ static int check_vma_flags(struct vm_area_struct *vma,
+ 		unsigned int flags)
+ {
+@@ -2136,27 +2082,23 @@ static int check_vma_flags(struct vm_area_struct *vma,
+ 	return -EFAULT;
+ }
+ 
+-static int check_vma(unsigned long hostptr, u64 size)
++static int check_vma(struct vm_area_struct *vma, struct file *vmfile,
++		struct kgsl_memdesc *memdesc)
+ {
+-	struct vm_area_struct *vma;
+-	unsigned long cur = hostptr;
+-
+-	while (cur < (hostptr + size)) {
+-		vma = find_vma(current->mm, cur);
+-		if (!vma)
+-			return false;
+-
+-		/* Don't remap memory that we already own */
+-		if (vma->vm_file && vma->vm_file->f_op == &kgsl_fops)
+-			return false;
+-
+-		cur = vma->vm_end;
+-	}
++	if (vma == NULL || vma->vm_file != vmfile)
++		return -EINVAL;
+ 
+-	return true;
++	/* userspace may not know the size, in which case use the whole vma */
++	if (memdesc->size == 0)
++		memdesc->size = vma->vm_end - vma->vm_start;
++	/* range checking */
++	if (vma->vm_start != memdesc->useraddr ||
++		(memdesc->useraddr + memdesc->size) != vma->vm_end)
++		return -EINVAL;
++	return check_vma_flags(vma, memdesc->flags);
+ }
+ 
+-static int memdesc_sg_virt(struct kgsl_memdesc *memdesc, unsigned long useraddr)
++static int memdesc_sg_virt(struct kgsl_memdesc *memdesc, struct file *vmfile)
+ {
+ 	int ret = 0;
+ 	long npages = 0, i;
+@@ -2178,18 +2120,18 @@ static int memdesc_sg_virt(struct kgsl_memdesc *memdesc, unsigned long useraddr)
+ 	}
+ 
+ 	down_read(&current->mm->mmap_sem);
+-	if (!check_vma(useraddr, memdesc->size)) {
+-		up_read(&current->mm->mmap_sem);
+-		ret = -EFAULT;
+-		goto out;
+-	}
++	/* If we have vmfile, make sure we map the correct vma and map it all */
++	if (vmfile != NULL)
++		ret = check_vma(find_vma(current->mm, memdesc->useraddr),
++				vmfile, memdesc);
+ 
+-	npages = get_user_pages(current, current->mm, useraddr,
+-					sglen, write ? FOLL_WRITE : 0,
+-					pages, NULL);
++	if (ret == 0) {
++		npages = get_user_pages(current, current->mm, memdesc->useraddr,
++					sglen, write ? FOLL_WRITE : 0, pages, NULL);
++		ret = (npages < 0) ? (int)npages : 0;
++	}
+ 	up_read(&current->mm->mmap_sem);
+ 
+-	ret = (npages < 0) ? (int)npages : 0;
+ 	if (ret)
+ 		goto out;
+ 
+@@ -2218,34 +2160,29 @@ static int kgsl_setup_anon_useraddr(struct kgsl_pagetable *pagetable,
+ {
+ 	/* Map an anonymous memory chunk */
+ 
+-	int ret;
+-
+ 	if (size == 0 || offset != 0 ||
+ 		!IS_ALIGNED(size, PAGE_SIZE))
+ 		return -EINVAL;
+ 
+ 	entry->memdesc.pagetable = pagetable;
+ 	entry->memdesc.size = (uint64_t) size;
++	entry->memdesc.useraddr = hostptr;
+ 	entry->memdesc.flags |= KGSL_MEMFLAGS_USERMEM_ADDR;
+ 
+ 	if (kgsl_memdesc_use_cpu_map(&entry->memdesc)) {
++		int ret;
+ 
+ 		/* Register the address in the database */
+ 		ret = kgsl_mmu_set_svm_region(pagetable,
+-			(uint64_t) hostptr, (uint64_t) size);
++			(uint64_t) entry->memdesc.useraddr, (uint64_t) size);
+ 
+ 		if (ret)
+ 			return ret;
+ 
+-		entry->memdesc.gpuaddr = (uint64_t) hostptr;
++		entry->memdesc.gpuaddr = (uint64_t)  entry->memdesc.useraddr;
+ 	}
+ 
+-	ret =  memdesc_sg_virt(&entry->memdesc, hostptr);
+-
+-	if (ret && kgsl_memdesc_use_cpu_map(&entry->memdesc))
+-		kgsl_mmu_put_gpuaddr(&entry->memdesc);
+-
+-	return ret;
++	return memdesc_sg_virt(&entry->memdesc, NULL);
+ }
+ 
+ static int match_file(const void *p, struct file *file, unsigned int fd)
+@@ -2330,8 +2267,8 @@ static int kgsl_setup_dmabuf_useraddr(struct kgsl_device *device,
+ 		return ret;
+ 	}
+ 
+-	/* Setup the cache mode for cache operations */
+-
++	/* Setup the user addr/cache mode for cache operations */
++	entry->memdesc.useraddr = hostptr;
+ 	_setup_cache_mode(entry, vma);
+ 	up_read(&current->mm->mmap_sem);
+ 	return 0;
+@@ -2465,8 +2402,6 @@ long kgsl_ioctl_gpuobj_import(struct kgsl_device_private *dev_priv,
+ 	if (entry == NULL)
+ 		return -ENOMEM;
+ 
+-	spin_lock_init(&entry->memdesc.lock);
+-
+ 	param->flags &= KGSL_MEMFLAGS_GPUREADONLY
+ 			| KGSL_MEMTYPE_MASK
+ 			| KGSL_MEMALIGN_MASK
+@@ -2520,7 +2455,7 @@ long kgsl_ioctl_gpuobj_import(struct kgsl_device_private *dev_priv,
+ 	return 0;
+ 
+ unmap:
+-	if (kgsl_memdesc_usermem_type(&entry->memdesc) == KGSL_MEM_ENTRY_ION) {
++	if (param->type == KGSL_USER_MEM_TYPE_DMABUF) {
+ 		kgsl_destroy_ion(entry->priv_data);
+ 		entry->memdesc.sgt = NULL;
+ 	}
+@@ -2740,8 +2675,6 @@ long kgsl_ioctl_map_user_mem(struct kgsl_device_private *dev_priv,
+ 	if (entry == NULL)
+ 		return -ENOMEM;
+ 
+-	spin_lock_init(&entry->memdesc.lock);
+-
+ 	/*
+ 	 * Convert from enum value to KGSL_MEM_ENTRY value, so that
+ 	 * we can use the latter consistently everywhere.
+@@ -2831,7 +2764,7 @@ long kgsl_ioctl_map_user_mem(struct kgsl_device_private *dev_priv,
+ 	return result;
+ 
+ error_attach:
+-	switch (kgsl_memdesc_usermem_type(&entry->memdesc)) {
++	switch (memtype) {
+ 	case KGSL_MEM_ENTRY_ION:
+ 		kgsl_destroy_ion(entry->priv_data);
+ 		entry->memdesc.sgt = NULL;
+@@ -3253,15 +3186,7 @@ long kgsl_ioctl_gpuobj_alloc(struct kgsl_device_private *dev_priv,
+ {
+ 	struct kgsl_gpuobj_alloc *param = data;
+ 	struct kgsl_mem_entry *entry;
+-#if defined(CONFIG_DISPLAY_SAMSUNG)
+-	struct kgsl_process_private *private = dev_priv->process_priv;
+-	uint64_t debug_size;
+-	debug_size = param->size >> 10;
+ 
+-	if(debug_size > 200000) {
+-		pr_err("kgsl: huge memory %lldKB is requested from pid = %d comm = %s\n", debug_size, private->pid, private->comm);
+-	}
+-#endif
+ 	entry = gpumem_alloc_entry(dev_priv, param->size, param->flags);
+ 
+ 	if (IS_ERR(entry))
+@@ -3361,12 +3286,7 @@ long kgsl_ioctl_gpumem_get_info(struct kgsl_device_private *dev_priv,
+ 	param->flags = (unsigned int) entry->memdesc.flags;
+ 	param->size = (size_t) entry->memdesc.size;
+ 	param->mmapsize = (size_t) kgsl_memdesc_footprint(&entry->memdesc);
+-	/*
+-	 * Entries can have multiple user mappings so thre isn't any one address
+-	 * we can report. Plus, the user should already know their mappings, so
+-	 * there isn't any value in reporting it back to them.
+-	 */
+-	param->useraddr = 0;
++	param->useraddr = entry->memdesc.useraddr;
+ 
+ 	kgsl_mem_entry_put(entry);
+ 	return result;
+@@ -3391,15 +3311,11 @@ long kgsl_ioctl_sparse_phys_alloc(struct kgsl_device_private *dev_priv,
+ 	unsigned int cmd, void *data)
+ {
+ 	struct kgsl_process_private *process = dev_priv->process_priv;
+-	struct kgsl_device *device = dev_priv->device;
+ 	struct kgsl_sparse_phys_alloc *param = data;
+ 	struct kgsl_mem_entry *entry;
+ 	int ret;
+ 	int id;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	ret = _sparse_alloc_param_sanity_check(param->size, param->pagesize);
+ 	if (ret)
+ 		return ret;
+@@ -3478,13 +3394,9 @@ long kgsl_ioctl_sparse_phys_free(struct kgsl_device_private *dev_priv,
+ 	unsigned int cmd, void *data)
+ {
+ 	struct kgsl_process_private *process = dev_priv->process_priv;
+-	struct kgsl_device *device = dev_priv->device;
+ 	struct kgsl_sparse_phys_free *param = data;
+ 	struct kgsl_mem_entry *entry;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	entry = kgsl_sharedmem_find_id_flags(process, param->id,
+ 			KGSL_MEMFLAGS_SPARSE_PHYS);
+ 	if (entry == NULL)
+@@ -3514,14 +3426,10 @@ long kgsl_ioctl_sparse_virt_alloc(struct kgsl_device_private *dev_priv,
+ 	unsigned int cmd, void *data)
+ {
+ 	struct kgsl_process_private *private = dev_priv->process_priv;
+-	struct kgsl_device *device = dev_priv->device;
+ 	struct kgsl_sparse_virt_alloc *param = data;
+ 	struct kgsl_mem_entry *entry;
+ 	int ret;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	ret = _sparse_alloc_param_sanity_check(param->size, param->pagesize);
+ 	if (ret)
+ 		return ret;
+@@ -3530,8 +3438,6 @@ long kgsl_ioctl_sparse_virt_alloc(struct kgsl_device_private *dev_priv,
+ 	if (entry == NULL)
+ 		return -ENOMEM;
+ 
+-	spin_lock_init(&entry->memdesc.lock);
+-
+ 	entry->memdesc.flags = KGSL_MEMFLAGS_SPARSE_VIRT;
+ 	entry->memdesc.size = param->size;
+ 	entry->memdesc.cur_bindings = 0;
+@@ -3563,13 +3469,9 @@ long kgsl_ioctl_sparse_virt_free(struct kgsl_device_private *dev_priv,
+ 	unsigned int cmd, void *data)
+ {
+ 	struct kgsl_process_private *process = dev_priv->process_priv;
+-	struct kgsl_device *device = dev_priv->device;
+ 	struct kgsl_sparse_virt_free *param = data;
+ 	struct kgsl_mem_entry *entry = NULL;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	entry = kgsl_sharedmem_find_id_flags(process, param->id,
+ 			KGSL_MEMFLAGS_SPARSE_VIRT);
+ 	if (entry == NULL)
+@@ -3834,6 +3736,9 @@ static int _sparse_bind(struct kgsl_process_private *process,
+ 	if (memdesc->gpuaddr)
+ 		return -EINVAL;
+ 
++	if (memdesc->useraddr != 0)
++		return -EINVAL;
++
+ 	pagetable = memdesc->pagetable;
+ 
+ 	/* Clear out any mappings */
+@@ -3913,7 +3818,6 @@ long kgsl_ioctl_sparse_bind(struct kgsl_device_private *dev_priv,
+ 		unsigned int cmd, void *data)
+ {
+ 	struct kgsl_process_private *private = dev_priv->process_priv;
+-	struct kgsl_device *device = dev_priv->device;
+ 	struct kgsl_sparse_bind *param = data;
+ 	struct kgsl_sparse_binding_object obj;
+ 	struct kgsl_mem_entry *virt_entry;
+@@ -3922,9 +3826,6 @@ long kgsl_ioctl_sparse_bind(struct kgsl_device_private *dev_priv,
+ 	int ret = 0;
+ 	int i = 0;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	ptr = (void __user *) (uintptr_t) param->list;
+ 
+ 	if (param->size > sizeof(struct kgsl_sparse_binding_object) ||
+@@ -3980,9 +3881,6 @@ long kgsl_ioctl_gpu_sparse_command(struct kgsl_device_private *dev_priv,
+ 	long result;
+ 	unsigned int i = 0;
+ 
+-	if (!(device->flags & KGSL_FLAG_SPARSE))
+-		return -ENOTSUPP;
+-
+ 	/* Make sure sparse and syncpoint count isn't too big */
+ 	if (param->numsparse > KGSL_MAX_SPARSE ||
+ 		param->numsyncs > KGSL_MAX_SYNCPOINTS)
+@@ -4113,12 +4011,7 @@ long kgsl_ioctl_gpuobj_info(struct kgsl_device_private *dev_priv,
+ 	param->flags = entry->memdesc.flags;
+ 	param->size = entry->memdesc.size;
+ 	param->va_len = kgsl_memdesc_footprint(&entry->memdesc);
+-	/*
+-	 * Entries can have multiple user mappings so thre isn't any one address
+-	 * we can report. Plus, the user should already know their mappings, so
+-	 * there isn't any value in reporting it back to them.
+-	 */
+-	param->va_addr = 0;
++	param->va_addr = (uint64_t) entry->memdesc.useraddr;
+ 
+ 	kgsl_mem_entry_put(entry);
+ 	return 0;
+@@ -4255,8 +4148,6 @@ kgsl_mmap_memstore(struct kgsl_device *device, struct vm_area_struct *vma)
+ 	if (vma->vm_flags & VM_WRITE)
+ 		return -EPERM;
+ 
+-	vma->vm_flags &= ~VM_MAYWRITE;
+-
+ 	if (memdesc->size  !=  vma_size) {
+ 		KGSL_MEM_ERR(device, "memstore bad size: %d should be %llu\n",
+ 			     vma_size, memdesc->size);
+@@ -4286,8 +4177,6 @@ static void kgsl_gpumem_vm_open(struct vm_area_struct *vma)
+ 
+ 	if (kgsl_mem_entry_get(entry) == 0)
+ 		vma->vm_private_data = NULL;
+-
+-	atomic_inc(&entry->map_count);
+ }
+ 
+ static int
+@@ -4311,8 +4200,7 @@ kgsl_gpumem_vm_close(struct vm_area_struct *vma)
+ 	if (!entry)
+ 		return;
+ 
+-	atomic_dec(&entry->map_count);
+-
++	entry->memdesc.useraddr = 0;
+ 	kgsl_mem_entry_put(entry);
+ }
+ 
+@@ -4351,8 +4239,7 @@ get_mmap_entry(struct kgsl_process_private *private,
+ 		}
+ 	}
+ 
+-	/* Don't allow ourselves to remap user memory */
+-	if (entry->memdesc.flags & KGSL_MEMFLAGS_USERMEM_ADDR) {
++	if (entry->memdesc.useraddr != 0) {
+ 		ret = -EBUSY;
+ 		goto err_put;
+ 	}
+@@ -4385,34 +4272,19 @@ static unsigned long _gpu_set_svm_region(struct kgsl_process_private *private,
+ {
+ 	int ret;
+ 
+-	/*
+-	 * Protect access to the gpuaddr here to prevent multiple vmas from
+-	 * trying to map a SVM region at the same time
+-	 */
+-	spin_lock(&entry->memdesc.lock);
+-
+-	if (entry->memdesc.gpuaddr) {
+-		spin_unlock(&entry->memdesc.lock);
+-		return (unsigned long) -EBUSY;
+-	}
+-
+ 	ret = kgsl_mmu_set_svm_region(private->pagetable, (uint64_t) addr,
+ 		(uint64_t) size);
+ 
+-	if (ret != 0) {
+-		spin_unlock(&entry->memdesc.lock);
+-		return (unsigned long) ret;
+-	}
++	if (ret != 0)
++		return ret;
+ 
+ 	entry->memdesc.gpuaddr = (uint64_t) addr;
+-	spin_unlock(&entry->memdesc.lock);
+-
+ 	entry->memdesc.pagetable = private->pagetable;
+ 
+ 	ret = kgsl_mmu_map(private->pagetable, &entry->memdesc);
+ 	if (ret) {
+ 		kgsl_mmu_put_gpuaddr(&entry->memdesc);
+-		return (unsigned long) ret;
++		return ret;
+ 	}
+ 
+ 	kgsl_memfree_purge(private->pagetable, entry->memdesc.gpuaddr,
+@@ -4475,14 +4347,6 @@ static unsigned long _search_range(struct kgsl_process_private *private,
+ 		result = _gpu_set_svm_region(private, entry, cpu, len);
+ 		if (!IS_ERR_VALUE(result))
+ 			break;
+-		/*
+-		 * _gpu_set_svm_region will return -EBUSY if we tried to set up
+-		 * SVM on an object that already has a GPU address. If
+-		 * that happens don't bother walking the rest of the
+-		 * region
+-		 */
+-		if ((long) result == -EBUSY)
+-			return -EBUSY;
+ 
+ 		trace_kgsl_mem_unmapped_area_collision(entry, cpu, len);
+ 
+@@ -4620,20 +4484,18 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
+ 		if (IS_ERR_VALUE(val))
+ 			KGSL_DRV_ERR_RATELIMIT(device,
+ 				"get_unmapped_area: pid %d addr %lx pgoff %lx len %ld failed error %d\n",
+-				pid_nr(private->pid), addr,
+-				pgoff, len, (int) val);
++				private->pid, addr, pgoff, len, (int) val);
+ 	} else {
+ 		 val = _get_svm_area(private, entry, addr, len, flags);
+ 		 if (IS_ERR_VALUE(val))
+ 			KGSL_DRV_ERR_RATELIMIT(device,
+ 				"_get_svm_area: pid %d mmap_base %lx addr %lx pgoff %lx len %ld failed error %d\n",
+-				pid_nr(private->pid),
+-				current->mm->mmap_base, addr,
++				private->pid, current->mm->mmap_base, addr,
+ 				pgoff, len, (int) val);
+ 
+ #if defined(CONFIG_FB_MSM_MDSS_SAMSUNG)
+ 		if (IS_ERR_VALUE(val)) {
+-			kgsl_mem_dump_pid = pid_nr(private->pid);
++			kgsl_mem_dump_pid = private->pid;
+ 
+ 			task = find_task_by_vpid(kgsl_mem_dump_pid);
+ 
+@@ -4725,9 +4587,9 @@ static int kgsl_mmap(struct file *file, struct vm_area_struct *vma)
+ 
+ 	vma->vm_file = file;
+ 
+-	atomic_inc(&entry->map_count);
++	entry->memdesc.useraddr = vma->vm_start;
+ 
+-	trace_kgsl_mem_mmap(entry, vma->vm_start);
++	trace_kgsl_mem_mmap(entry);
+ 	return 0;
+ }
+ 
+@@ -4853,9 +4715,6 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
+ 	/* Initialize logging first, so that failures below actually print. */
+ 	kgsl_device_debugfs_init(device);
+ 
+-	/* Disable the sparse ioctl invocation as they are not used */
+-	device->flags &= ~KGSL_FLAG_SPARSE;
+-
+ 	status = kgsl_pwrctrl_init(device);
+ 	if (status)
+ 		goto error;
+diff --git a/drivers/gpu/msm/kgsl.h b/drivers/gpu/msm/kgsl.h
+old mode 100644
+new mode 100755
+index 31257d291..a486d9a86
+--- a/drivers/gpu/msm/kgsl.h
++++ b/drivers/gpu/msm/kgsl.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2008-2016,2018-2019,2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2008-2016, 2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -189,17 +189,17 @@ struct kgsl_memdesc_ops {
+ #define KGSL_MEMDESC_TZ_LOCKED BIT(7)
+ /* The memdesc is allocated through contiguous memory */
+ #define KGSL_MEMDESC_CONTIG BIT(8)
+-/* For global buffers, randomly assign an address from the region */
+-#define KGSL_MEMDESC_RANDOM BIT(9)
+ 
+ /**
+  * struct kgsl_memdesc - GPU memory object descriptor
+  * @pagetable: Pointer to the pagetable that the object is mapped in
+  * @hostptr: Kernel virtual address
+  * @hostptr_count: Number of threads using hostptr
++ * @useraddr: User virtual address (if applicable)
+  * @gpuaddr: GPU virtual address
+  * @physaddr: Physical address of the memory object
+  * @size: Size of the memory object
++ * @mapsize: Size of memory mapped in userspace
+  * @priv: Internal flags and settings
+  * @sgt: Scatter gather table for allocated pages
+  * @ops: Function hooks for the memdesc memory type
+@@ -214,9 +214,11 @@ struct kgsl_memdesc {
+ 	struct kgsl_pagetable *pagetable;
+ 	void *hostptr;
+ 	unsigned int hostptr_count;
++	unsigned long useraddr;
+ 	uint64_t gpuaddr;
+ 	phys_addr_t physaddr;
+ 	uint64_t size;
++	uint64_t mapsize;
+ 	unsigned int priv;
+ 	struct sg_table *sgt;
+ 	struct kgsl_memdesc_ops *ops;
+@@ -226,11 +228,6 @@ struct kgsl_memdesc {
+ 	struct page **pages;
+ 	unsigned int page_count;
+ 	unsigned int cur_bindings;
+-	/*
+-	 * @lock: Spinlock to protect the gpuaddr from being accessed by
+-	 * multiple entities trying to map the same SVM region at once
+-	 */
+-	spinlock_t lock;
+ };
+ 
+ /*
+@@ -279,11 +276,6 @@ struct kgsl_mem_entry {
+ 	struct work_struct work;
+ 	spinlock_t bind_lock;
+ 	struct rb_root bind_tree;
+-	/*
+-	 * @map_count: Count how many vmas this object is mapped in - used for
+-	 * debugfs accounting
+-	 */
+-	atomic_t map_count;
+ };
+ 
+ struct kgsl_device_private;
+diff --git a/drivers/gpu/msm/kgsl_cffdump.c b/drivers/gpu/msm/kgsl_cffdump.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_cffdump.h b/drivers/gpu/msm/kgsl_cffdump.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_compat.c b/drivers/gpu/msm/kgsl_compat.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_compat.h b/drivers/gpu/msm/kgsl_compat.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_debugfs.c b/drivers/gpu/msm/kgsl_debugfs.c
+old mode 100644
+new mode 100755
+index abb0d87ce..0504c3397
+--- a/drivers/gpu/msm/kgsl_debugfs.c
++++ b/drivers/gpu/msm/kgsl_debugfs.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2008-2017,2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2008-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -148,11 +148,7 @@ static int print_mem_entry(void *data, void *ptr)
+ 	flags[3] = get_alignflag(m);
+ 	flags[4] = get_cacheflag(m);
+ 	flags[5] = kgsl_memdesc_use_cpu_map(m) ? 'p' : '-';
+-	/*
+-	 * Show Y if at least one vma has this entry
+-	 * mapped (could be multiple)
+-	 */
+-	flags[6] = atomic_read(&entry->map_count) ? 'Y' : 'N';
++	flags[6] = (m->useraddr) ? 'Y' : 'N';
+ 	flags[7] = kgsl_memdesc_is_secured(m) ?  's' : '-';
+ 	flags[8] = m->flags & KGSL_MEMFLAGS_SPARSE_PHYS ? 'P' : '-';
+ 	flags[9] = '\0';
+@@ -163,17 +159,23 @@ static int print_mem_entry(void *data, void *ptr)
+ 		kgsl_get_egl_counts(entry, &egl_surface_count,
+ 						&egl_image_count);
+ 
+-	seq_printf(s, "%pK %d %16llu %5d %9s %10s %16s %5d %16d %6d %6d",
++#if defined(CONFIG_FB_MSM_MDSS_SAMSUNG) && !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
++	seq_printf(s, "%p %p %16llu %5d %9s %10s %16s %5d %16llu %6d %6d",
++			(uint64_t *)(uintptr_t) m->gpuaddr,
++			(unsigned long *) m->useraddr,
++			m->size, entry->id, flags,
++			memtype_str(kgsl_memdesc_usermem_type(m)),
++			usage, (m->sgt ? m->sgt->nents : 0), m->mapsize,
++			egl_surface_count, egl_image_count);
++#else
++	seq_printf(s, "%pK %pK %16llu %5d %9s %10s %16s %5d %16llu %6d %6d",
+ 			(uint64_t *)(uintptr_t) m->gpuaddr,
+-			/*
+-			 * Show zero for the useraddr - we can't reliably track
+-			 * that value for multiple vmas anyway
+-			 */
+-			0, m->size, entry->id, flags,
++			(unsigned long *) m->useraddr,
++			m->size, entry->id, flags,
+ 			memtype_str(usermem_type),
+-			usage, (m->sgt ? m->sgt->nents : 0),
+-			atomic_read(&entry->map_count),
++			usage, (m->sgt ? m->sgt->nents : 0), m->mapsize,
+ 			egl_surface_count, egl_image_count);
++#endif
+ 
+ 	if (entry->metadata[0] != 0)
+ 		seq_printf(s, " %s", entry->metadata);
+@@ -242,7 +244,7 @@ static int process_mem_seq_show(struct seq_file *s, void *ptr)
+ 	if (ptr == SEQ_START_TOKEN) {
+ 		seq_printf(s, "%16s %16s %16s %5s %9s %10s %16s %5s %16s %6s %6s\n",
+ 			"gpuaddr", "useraddr", "size", "id", "flags", "type",
+-			"usage", "sglen", "mapcount", "eglsrf", "eglimg");
++			"usage", "sglen", "mapsize", "eglsrf", "eglimg");
+ 		return 0;
+ 	} else
+ 		return print_mem_entry(s, ptr);
+@@ -400,7 +402,7 @@ void kgsl_process_init_debugfs(struct kgsl_process_private *private)
+ 	unsigned char name[16];
+ 	struct dentry *dentry;
+ 
+-	snprintf(name, sizeof(name), "%d", pid_nr(private->pid));
++	snprintf(name, sizeof(name), "%d", private->pid);
+ 
+ 	private->debug_root = debugfs_create_dir(name, proc_d_debugfs);
+ 
+@@ -420,15 +422,14 @@ void kgsl_process_init_debugfs(struct kgsl_process_private *private)
+ 	}
+ 
+ 	dentry = debugfs_create_file("mem", 0444, private->debug_root,
+-		(void *) ((unsigned long) pid_nr(private->pid)),
+-		&process_mem_fops);
++		(void *) ((unsigned long) private->pid), &process_mem_fops);
+ 
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		WARN((dentry == NULL),
+ 			"Unable to create 'mem' file for %s\n", name);
+ 
+ 	dentry = debugfs_create_file("sparse_mem", 0444, private->debug_root,
+-		(void *) ((unsigned long) pid_nr(private->pid)),
++		(void *) ((unsigned long) private->pid),
+ 		&process_sparse_mem_fops);
+ 
+ 	if (IS_ERR_OR_NULL(dentry))
+@@ -489,7 +490,7 @@ static int kgsl_mem_debugfs_show(struct seq_file *s, void *unused)
+ 				if (!IS_ERR_OR_NULL(dump_private->pagetable)) {
+ 					pt = (struct kgsl_iommu_pt *)(dump_private->pagetable->priv);
+ 					if (!IS_ERR_OR_NULL(pt)) {
+-						kgsl_mem_dump_svm_start = pt->svm_start;
++						kgsl_mem_dump_svm_start = pt->svm_start; 
+ 						kgsl_mem_dump_svm_end = pt->svm_end;
+ 					}
+ 				}
+@@ -544,7 +545,7 @@ static int kgsl_mem_debugfs_show(struct seq_file *s, void *unused)
+ 			}
+ 
+ 			seq_printf(s, "Biggest hole(from 0x%lx to 0x%lx) is 0x%lx (%lu KB)\n"
+-					"Total hole is 0x%lx (%lu KB)\n",
++					"Total hole is 0x%lx (%lu KB)\n", 
+ 					kgsl_mem_dump_svm_start, kgsl_mem_dump_svm_end,
+ 					biggest_hole, biggest_hole,
+ 					total_hole, total_hole);
+@@ -557,7 +558,7 @@ static int kgsl_mem_debugfs_show(struct seq_file *s, void *unused)
+ }
+ 
+ static int kgsl_mem_debugfs_open(struct inode *inode, struct file *file)
+-{
++{	
+ 	return single_open(file, kgsl_mem_debugfs_show, file);
+ }
+ 
+diff --git a/drivers/gpu/msm/kgsl_debugfs.h b/drivers/gpu/msm/kgsl_debugfs.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_device.h b/drivers/gpu/msm/kgsl_device.h
+old mode 100644
+new mode 100755
+index 6493cc583..7177e0970
+--- a/drivers/gpu/msm/kgsl_device.h
++++ b/drivers/gpu/msm/kgsl_device.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2020, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -61,7 +61,6 @@ enum kgsl_event_results {
+ };
+ 
+ #define KGSL_FLAG_WAKE_ON_TOUCH BIT(0)
+-#define KGSL_FLAG_SPARSE        BIT(1)
+ 
+ /*
+  * "list" of event types for ftrace symbolic magic
+@@ -88,8 +87,7 @@ enum kgsl_event_results {
+ 	{ KGSL_CONTEXT_TYPE_GL, "GL" }, \
+ 	{ KGSL_CONTEXT_TYPE_CL, "CL" }, \
+ 	{ KGSL_CONTEXT_TYPE_C2D, "C2D" }, \
+-	{ KGSL_CONTEXT_TYPE_RS, "RS" }, \
+-	{ KGSL_CONTEXT_TYPE_VK, "VK" }
++	{ KGSL_CONTEXT_TYPE_RS, "RS" }
+ 
+ #define KGSL_CONTEXT_ID(_context) \
+ 	((_context != NULL) ? (_context)->id : KGSL_MEMSTORE_GLOBAL)
+@@ -405,13 +403,13 @@ struct kgsl_context {
+ #define pr_context(_d, _c, fmt, args...) \
+ 		dev_err((_d)->dev, "%s[%d]: " fmt, \
+ 		_context_comm((_c)), \
+-		pid_nr((_c)->proc_priv->pid), ##args)
++		(_c)->proc_priv->pid, ##args)
+ 
+ /**
+  * struct kgsl_process_private -  Private structure for a KGSL process (across
+  * all devices)
+  * @priv: Internal flags, use KGSL_PROCESS_* values
+- * @pid: Identification structure for the task owner of the process
++ * @pid: ID for the task owner of the process
+  * @comm: task name of the process
+  * @mem_lock: Spinlock to protect the process memory lists
+  * @refcount: kref object for reference counting the process
+@@ -424,11 +422,10 @@ struct kgsl_context {
+  * @syncsource_lock: Spinlock to protect the syncsource idr
+  * @fd_count: Counter for the number of FDs for this process
+  * @ctxt_count: Count for the number of contexts for this process
+- * @ctxt_count_lock: Spinlock to protect ctxt_count
+  */
+ struct kgsl_process_private {
+ 	unsigned long priv;
+-	struct pid *pid;
++	pid_t pid;
+ 	char comm[TASK_COMM_LEN];
+ 	spinlock_t mem_lock;
+ 	struct kref refcount;
+@@ -445,7 +442,6 @@ struct kgsl_process_private {
+ 	spinlock_t syncsource_lock;
+ 	int fd_count;
+ 	atomic_t ctxt_count;
+-	spinlock_t ctxt_count_lock;
+ };
+ 
+ /**
+diff --git a/drivers/gpu/msm/kgsl_drawobj.c b/drivers/gpu/msm/kgsl_drawobj.c
+old mode 100644
+new mode 100755
+index 51dbfa5b2..fba18231c
+--- a/drivers/gpu/msm/kgsl_drawobj.c
++++ b/drivers/gpu/msm/kgsl_drawobj.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2016-2017,2019, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -173,11 +173,8 @@ static void syncobj_timer(unsigned long data)
+ /*
+  * a generic function to retire a pending sync event and (possibly)
+  * kick the dispatcher
+- * Returns false if the event was already marked for cancellation in another
+- * thread. This function should return true if this thread is responsible for
+- * freeing up the memory, and the event will not be cancelled.
+  */
+-static bool drawobj_sync_expire(struct kgsl_device *device,
++static void drawobj_sync_expire(struct kgsl_device *device,
+ 	struct kgsl_drawobj_sync_event *event)
+ {
+ 	struct kgsl_drawobj_sync *syncobj = event->syncobj;
+@@ -186,7 +183,7 @@ static bool drawobj_sync_expire(struct kgsl_device *device,
+ 	 * leave without doing anything useful
+ 	 */
+ 	if (!test_and_clear_bit(event->id, &syncobj->pending))
+-		return false;
++		return;
+ 
+ 	/*
+ 	 * If no more pending events, delete the timer and schedule the command
+@@ -199,7 +196,6 @@ static bool drawobj_sync_expire(struct kgsl_device *device,
+ 			device->ftbl->drawctxt_sched(device,
+ 				event->syncobj->base.context);
+ 	}
+-	return true;
+ }
+ 
+ /*
+@@ -214,13 +210,8 @@ static void drawobj_sync_func(struct kgsl_device *device,
+ 	trace_syncpoint_timestamp_expire(event->syncobj,
+ 		event->context, event->timestamp);
+ 
+-	/*
+-	 * Put down the context ref count only if
+-	 * this thread successfully clears the pending bit mask.
+-	 */
+-	if (drawobj_sync_expire(device, event))
+-		kgsl_context_put(event->context);
+-
++	drawobj_sync_expire(device, event);
++	kgsl_context_put(event->context);
+ 	drawobj_put(&event->syncobj->base);
+ }
+ 
+@@ -250,12 +241,19 @@ static void drawobj_destroy_sparse(struct kgsl_drawobj *drawobj)
+ static void drawobj_destroy_sync(struct kgsl_drawobj *drawobj)
+ {
+ 	struct kgsl_drawobj_sync *syncobj = SYNCOBJ(drawobj);
+-	unsigned long flags;
++	unsigned long pending, flags;
+ 	unsigned int i;
+ 
+ 	/* Zap the canary timer */
+ 	del_timer_sync(&syncobj->timer);
+ 
++	/*
++	 * Copy off the pending list and clear all pending events - this will
++	 * render any subsequent asynchronous callback harmless
++	 */
++	bitmap_copy(&pending, &syncobj->pending, KGSL_MAX_SYNCPOINTS);
++	bitmap_zero(&syncobj->pending, KGSL_MAX_SYNCPOINTS);
++
+ 	/*
+ 	 * Clear all pending events - this will render any subsequent async
+ 	 * callbacks harmless
+@@ -263,12 +261,8 @@ static void drawobj_destroy_sync(struct kgsl_drawobj *drawobj)
+ 	for (i = 0; i < syncobj->numsyncs; i++) {
+ 		struct kgsl_drawobj_sync_event *event = &syncobj->synclist[i];
+ 
+-		/*
+-		 * Don't do anything if the event has already expired.
+-		 * If this thread clears the pending bit mask then it is
+-		 * responsible for doing context put.
+-		 */
+-		if (!test_and_clear_bit(i, &syncobj->pending))
++		/* Don't do anything if the event has already expired */
++		if (!test_bit(i, &pending))
+ 			continue;
+ 
+ 		switch (event->type) {
+@@ -276,11 +270,6 @@ static void drawobj_destroy_sync(struct kgsl_drawobj *drawobj)
+ 			kgsl_cancel_event(drawobj->device,
+ 				&event->context->events, event->timestamp,
+ 				drawobj_sync_func, event);
+-			/*
+-			 * Do context put here to make sure the context is alive
+-			 * till this thread cancels kgsl event.
+-			 */
+-			kgsl_context_put(event->context);
+ 			break;
+ 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
+ 			spin_lock_irqsave(&event->handle_lock, flags);
+@@ -302,7 +291,7 @@ static void drawobj_destroy_sync(struct kgsl_drawobj *drawobj)
+ 	 * If we cancelled an event, there's a good chance that the context is
+ 	 * on a dispatcher queue, so schedule to get it removed.
+ 	 */
+-	if (!bitmap_empty(&syncobj->pending, KGSL_MAX_SYNCPOINTS) &&
++	if (!bitmap_empty(&pending, KGSL_MAX_SYNCPOINTS) &&
+ 		drawobj->device->ftbl->drawctxt_sched)
+ 		drawobj->device->ftbl->drawctxt_sched(drawobj->device,
+ 							drawobj->context);
+@@ -585,7 +574,6 @@ static void add_profiling_buffer(struct kgsl_device *device,
+ {
+ 	struct kgsl_mem_entry *entry;
+ 	struct kgsl_drawobj *drawobj = DRAWOBJ(cmdobj);
+-	u64 start;
+ 
+ 	if (!(drawobj->flags & KGSL_DRAWOBJ_PROFILING))
+ 		return;
+@@ -602,14 +590,7 @@ static void add_profiling_buffer(struct kgsl_device *device,
+ 			gpuaddr);
+ 
+ 	if (entry != NULL) {
+-		start = id ? (entry->memdesc.gpuaddr + offset) : gpuaddr;
+-		/*
+-		 * Make sure there is enough room in the object to store the
+-		 * entire profiling buffer object
+-		 */
+-		if (!kgsl_gpuaddr_in_memdesc(&entry->memdesc, gpuaddr, size) ||
+-			!kgsl_gpuaddr_in_memdesc(&entry->memdesc, start,
+-				sizeof(struct kgsl_drawobj_profiling_buffer))) {
++		if (!kgsl_gpuaddr_in_memdesc(&entry->memdesc, gpuaddr, size)) {
+ 			kgsl_mem_entry_put(entry);
+ 			entry = NULL;
+ 		}
+@@ -622,8 +603,13 @@ static void add_profiling_buffer(struct kgsl_device *device,
+ 		return;
+ 	}
+ 
+-	cmdobj->profiling_buffer_gpuaddr = start;
+ 	cmdobj->profiling_buf_entry = entry;
++
++	if (id != 0)
++		cmdobj->profiling_buffer_gpuaddr =
++			entry->memdesc.gpuaddr + offset;
++	else
++		cmdobj->profiling_buffer_gpuaddr = gpuaddr;
+ }
+ 
+ /**
+diff --git a/drivers/gpu/msm/kgsl_drawobj.h b/drivers/gpu/msm/kgsl_drawobj.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_events.c b/drivers/gpu/msm/kgsl_events.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_ioctl.c b/drivers/gpu/msm/kgsl_ioctl.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_iommu.c b/drivers/gpu/msm/kgsl_iommu.c
+old mode 100644
+new mode 100755
+index 1ff007a28..ae1127ef7
+--- a/drivers/gpu/msm/kgsl_iommu.c
++++ b/drivers/gpu/msm/kgsl_iommu.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2019, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -20,7 +20,6 @@
+ #include <linux/msm_kgsl.h>
+ #include <linux/ratelimit.h>
+ #include <linux/of_platform.h>
+-#include <linux/random.h>
+ #include <soc/qcom/scm.h>
+ #include <soc/qcom/secure_buffer.h>
+ #include <stddef.h>
+@@ -88,8 +87,15 @@ static struct kmem_cache *addr_entry_cache;
+  *
+  * Here we define an array and a simple allocator to keep track of the currently
+  * active global entries. Each entry is assigned a unique address inside of a
+- * MMU implementation specific "global" region. We use a simple bitmap based
+- * allocator for the region to allow for both fixed and dynamic addressing.
++ * MMU implementation specific "global" region. The addresses are assigned
++ * sequentially and never re-used to avoid having to go back and reprogram
++ * existing pagetables. The entire list of active entries are mapped and
++ * unmapped into every new pagetable as it is created and destroyed.
++ *
++ * Because there are relatively few entries and they are defined at boot time we
++ * don't need to go over the top to define a dynamic allocation scheme. It will
++ * be less wasteful to pick a static number with a little bit of growth
++ * potential.
+  */
+ 
+ #define GLOBAL_PT_ENTRIES 32
+@@ -99,12 +105,10 @@ struct global_pt_entry {
+ 	char name[32];
+ };
+ 
+-#define GLOBAL_MAP_PAGES (KGSL_IOMMU_GLOBAL_MEM_SIZE >> PAGE_SHIFT)
+-
+ static struct global_pt_entry global_pt_entries[GLOBAL_PT_ENTRIES];
+ static struct kgsl_memdesc *kgsl_global_secure_pt_entry;
+-static DECLARE_BITMAP(global_map, GLOBAL_MAP_PAGES);
+ static int global_pt_count;
++uint64_t global_pt_alloc;
+ static struct kgsl_memdesc gpu_qdss_desc;
+ static struct kgsl_memdesc gpu_qtimer_desc;
+ 
+@@ -205,12 +209,6 @@ static void kgsl_iommu_remove_global(struct kgsl_mmu *mmu,
+ 
+ 	for (i = 0; i < global_pt_count; i++) {
+ 		if (global_pt_entries[i].memdesc == memdesc) {
+-			u64 offset = memdesc->gpuaddr -
+-				KGSL_IOMMU_GLOBAL_MEM_BASE(mmu);
+-
+-			bitmap_clear(global_map, offset >> PAGE_SHIFT,
+-				kgsl_memdesc_footprint(memdesc) >> PAGE_SHIFT);
+-
+ 			memdesc->gpuaddr = 0;
+ 			memdesc->priv &= ~KGSL_MEMDESC_GLOBAL;
+ 			global_pt_entries[i].memdesc = NULL;
+@@ -222,43 +220,15 @@ static void kgsl_iommu_remove_global(struct kgsl_mmu *mmu,
+ static void kgsl_iommu_add_global(struct kgsl_mmu *mmu,
+ 		struct kgsl_memdesc *memdesc, const char *name)
+ {
+-	u32 bit, start = 0;
+-	u64 size = kgsl_memdesc_footprint(memdesc);
+-
+ 	if (memdesc->gpuaddr != 0)
+ 		return;
+ 
+-	if (WARN_ON(global_pt_count >= GLOBAL_PT_ENTRIES))
+-		return;
+-
+-	if (WARN_ON(size > KGSL_IOMMU_GLOBAL_MEM_SIZE))
+-		return;
+-
+-	if (memdesc->priv & KGSL_MEMDESC_RANDOM) {
+-		u32 range = GLOBAL_MAP_PAGES - (size >> PAGE_SHIFT);
+-
+-		start = get_random_int() % range;
+-	}
+-
+-	while (start >= 0) {
+-		bit = bitmap_find_next_zero_area(global_map, GLOBAL_MAP_PAGES,
+-			start, size >> PAGE_SHIFT, 0);
+-
+-		if (bit < GLOBAL_MAP_PAGES)
+-			break;
+-
+-		start--;
+-	}
+-
+-	if (WARN_ON(start < 0))
+-		return;
+-
+-	memdesc->gpuaddr =
+-		KGSL_IOMMU_GLOBAL_MEM_BASE(mmu) + (bit << PAGE_SHIFT);
+-
+-	bitmap_set(global_map, bit, size >> PAGE_SHIFT);
++	BUG_ON(global_pt_count >= GLOBAL_PT_ENTRIES);
++	BUG_ON((global_pt_alloc + memdesc->size) >= KGSL_IOMMU_GLOBAL_MEM_SIZE);
+ 
++	memdesc->gpuaddr = KGSL_IOMMU_GLOBAL_MEM_BASE(mmu) + global_pt_alloc;
+ 	memdesc->priv |= KGSL_MEMDESC_GLOBAL;
++	global_pt_alloc += memdesc->size;
+ 
+ 	global_pt_entries[global_pt_count].memdesc = memdesc;
+ 	strlcpy(global_pt_entries[global_pt_count].name, name,
+@@ -293,7 +263,6 @@ static void kgsl_setup_qdss_desc(struct kgsl_device *device)
+ 		return;
+ 	}
+ 
+-	spin_lock_init(&gpu_qdss_desc.lock);
+ 	gpu_qdss_desc.flags = 0;
+ 	gpu_qdss_desc.priv = 0;
+ 	gpu_qdss_desc.physaddr = gpu_qdss_entry[0];
+@@ -339,7 +308,6 @@ static void kgsl_setup_qtimer_desc(struct kgsl_device *device)
+ 		return;
+ 	}
+ 
+-	spin_lock_init(&gpu_qtimer_desc.lock);
+ 	gpu_qtimer_desc.flags = 0;
+ 	gpu_qtimer_desc.priv = 0;
+ 	gpu_qtimer_desc.physaddr = gpu_qtimer_entry[0];
+@@ -717,7 +685,7 @@ static void _get_entries(struct kgsl_process_private *private,
+ 		prev->flags = p->memdesc.flags;
+ 		prev->priv = p->memdesc.priv;
+ 		prev->pending_free = p->pending_free;
+-		prev->pid = pid_nr(private->pid);
++		prev->pid = private->pid;
+ 		__kgsl_get_memory_usage(prev);
+ 	}
+ 
+@@ -727,7 +695,7 @@ static void _get_entries(struct kgsl_process_private *private,
+ 		next->flags = n->memdesc.flags;
+ 		next->priv = n->memdesc.priv;
+ 		next->pending_free = n->pending_free;
+-		next->pid = pid_nr(private->pid);
++		next->pid = private->pid;
+ 		__kgsl_get_memory_usage(next);
+ 	}
+ }
+@@ -925,21 +893,11 @@ static int kgsl_iommu_fault_handler(struct iommu_domain *domain,
+ 		no_page_fault_log = kgsl_mmu_log_fault_addr(mmu, ptbase, addr);
+ 
+ 	if (!no_page_fault_log && __ratelimit(&_rs)) {
+-		const char *api_str;
+-
+-		if (context != NULL) {
+-			struct adreno_context *drawctxt =
+-					ADRENO_CONTEXT(context);
+-
+-			api_str = get_api_type_str(drawctxt->type);
+-		} else
+-			api_str = "UNKNOWN";
+-
+ 		KGSL_MEM_CRIT(ctx->kgsldev,
+ 			"GPU PAGE FAULT: addr = %lX pid= %d\n", addr, ptname);
+ 		KGSL_MEM_CRIT(ctx->kgsldev,
+-			"context=%s ctx_type=%s TTBR0=0x%llx CIDR=0x%x (%s %s fault)\n",
+-			ctx->name, api_str, ptbase, contextidr,
++			"context=%s TTBR0=0x%llx CIDR=0x%x (%s %s fault)\n",
++			ctx->name, ptbase, contextidr,
+ 			write ? "write" : "read", fault_type);
+ 
+ 		/* Don't print the debug if this is a permissions fault */
+@@ -1527,7 +1485,6 @@ static int _setstate_alloc(struct kgsl_device *device,
+ {
+ 	int ret;
+ 
+-	spin_lock_init(&iommu->setstate.lock);
+ 	ret = kgsl_sharedmem_alloc_contig(device, &iommu->setstate, PAGE_SIZE);
+ 
+ 	if (!ret) {
+@@ -2418,22 +2375,6 @@ static uint64_t kgsl_iommu_find_svm_region(struct kgsl_pagetable *pagetable,
+ 	return addr;
+ }
+ 
+-static bool iommu_addr_in_svm_ranges(struct kgsl_iommu_pt *pt,
+-	u64 gpuaddr, u64 size)
+-{
+-	if ((gpuaddr >= pt->compat_va_start && gpuaddr < pt->compat_va_end) &&
+-		((gpuaddr + size) > pt->compat_va_start &&
+-			(gpuaddr + size) <= pt->compat_va_end))
+-		return true;
+-
+-	if ((gpuaddr >= pt->svm_start && gpuaddr < pt->svm_end) &&
+-		((gpuaddr + size) > pt->svm_start &&
+-			(gpuaddr + size) <= pt->svm_end))
+-		return true;
+-
+-	return false;
+-}
+-
+ static int kgsl_iommu_set_svm_region(struct kgsl_pagetable *pagetable,
+ 		uint64_t gpuaddr, uint64_t size)
+ {
+@@ -2441,8 +2382,9 @@ static int kgsl_iommu_set_svm_region(struct kgsl_pagetable *pagetable,
+ 	struct kgsl_iommu_pt *pt = pagetable->priv;
+ 	struct rb_node *node;
+ 
+-	/* Make sure the requested address doesn't fall out of SVM range */
+-	if (!iommu_addr_in_svm_ranges(pt, gpuaddr, size))
++	/* Make sure the requested address doesn't fall in the global range */
++	if (ADDR_IN_GLOBAL(pagetable->mmu, gpuaddr) ||
++			ADDR_IN_GLOBAL(pagetable->mmu, gpuaddr + size))
+ 		return -ENOMEM;
+ 
+ 	spin_lock(&pagetable->lock);
+@@ -2506,11 +2448,6 @@ static int kgsl_iommu_get_gpuaddr(struct kgsl_pagetable *pagetable,
+ 		goto out;
+ 	}
+ 
+-	/*
+-	 * This path is only called in a non-SVM path with locks so we can be
+-	 * sure we aren't racing with anybody so we don't need to worry about
+-	 * taking the lock
+-	 */
+ 	ret = _insert_gpuaddr(pagetable, addr, size);
+ 	if (ret == 0) {
+ 		memdesc->gpuaddr = addr;
+diff --git a/drivers/gpu/msm/kgsl_iommu.h b/drivers/gpu/msm/kgsl_iommu.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_log.h b/drivers/gpu/msm/kgsl_log.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_mmu.c b/drivers/gpu/msm/kgsl_mmu.c
+old mode 100644
+new mode 100755
+index 2e472730f..aa7157e88
+--- a/drivers/gpu/msm/kgsl_mmu.c
++++ b/drivers/gpu/msm/kgsl_mmu.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2017,2020-2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -432,7 +432,7 @@ void kgsl_mmu_put_gpuaddr(struct kgsl_memdesc *memdesc)
+ 	if (memdesc->size == 0 || memdesc->gpuaddr == 0)
+ 		return;
+ 
+-	if (!kgsl_memdesc_is_global(memdesc) && (KGSL_MEMDESC_MAPPED & memdesc->priv))
++	if (!kgsl_memdesc_is_global(memdesc))
+ 		unmap_fail = kgsl_mmu_unmap(pagetable, memdesc);
+ 
+ 	/*
+@@ -443,16 +443,10 @@ void kgsl_mmu_put_gpuaddr(struct kgsl_memdesc *memdesc)
+ 	if (PT_OP_VALID(pagetable, put_gpuaddr) && (unmap_fail == 0))
+ 		pagetable->pt_ops->put_gpuaddr(memdesc);
+ 
+-	memdesc->pagetable = NULL;
+-
+-	/*
+-	 * If SVM tries to take a GPU address it will lose the race until the
+-	 * gpuaddr returns to zero so we shouldn't need to worry about taking a
+-	 * lock here
+-	 */
+ 	if (!kgsl_memdesc_is_global(memdesc))
+ 		memdesc->gpuaddr = 0;
+ 
++	memdesc->pagetable = NULL;
+ }
+ EXPORT_SYMBOL(kgsl_mmu_put_gpuaddr);
+ 
+diff --git a/drivers/gpu/msm/kgsl_mmu.h b/drivers/gpu/msm/kgsl_mmu.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_pool.c b/drivers/gpu/msm/kgsl_pool.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_pool.h b/drivers/gpu/msm/kgsl_pool.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_pwrctrl.c b/drivers/gpu/msm/kgsl_pwrctrl.c
+old mode 100644
+new mode 100755
+index c91682203..b5476b061
+--- a/drivers/gpu/msm/kgsl_pwrctrl.c
++++ b/drivers/gpu/msm/kgsl_pwrctrl.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2010-2019, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2010-2018, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -61,7 +61,7 @@ static const char * const clocks[] = {
+ 	"iref_clk"
+ };
+ 
+-static unsigned long ib_votes[KGSL_MAX_BUSLEVELS];
++static unsigned int ib_votes[KGSL_MAX_BUSLEVELS];
+ static int last_vote_buslevel;
+ static int max_vote_buslevel;
+ 
+@@ -123,7 +123,7 @@ static void _record_pwrevent(struct kgsl_device *device,
+ /**
+  * kgsl_get_bw() - Return latest msm bus IB vote
+  */
+-static unsigned long kgsl_get_bw(void)
++static unsigned int kgsl_get_bw(void)
+ {
+ 	return ib_votes[last_vote_buslevel];
+ }
+@@ -137,9 +137,8 @@ static unsigned long kgsl_get_bw(void)
+ static void _ab_buslevel_update(struct kgsl_pwrctrl *pwr,
+ 				unsigned long *ab)
+ {
+-	unsigned long ib = ib_votes[last_vote_buslevel];
+-	unsigned long max_bw = ib_votes[max_vote_buslevel];
+-
++	unsigned int ib = ib_votes[last_vote_buslevel];
++	unsigned int max_bw = ib_votes[max_vote_buslevel];
+ 	if (!ab)
+ 		return;
+ 	if (ib == 0)
+@@ -2786,7 +2785,7 @@ static int _suspend(struct kgsl_device *device)
+ 	if ((device->state == KGSL_STATE_NONE) ||
+ 			(device->state == KGSL_STATE_INIT) ||
+ 			(device->state == KGSL_STATE_SUSPEND))
+-		return ret;
++		goto done;
+ 
+ 	/* drain to prevent from more commands being submitted */
+ 	device->ftbl->drain(device);
+@@ -2803,6 +2802,7 @@ static int _suspend(struct kgsl_device *device)
+ 	if (ret)
+ 		goto err;
+ 
++done:
+ 	kgsl_pwrctrl_set_state(device, KGSL_STATE_SUSPEND);
+ 	return ret;
+ 
+diff --git a/drivers/gpu/msm/kgsl_pwrctrl.h b/drivers/gpu/msm/kgsl_pwrctrl.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_pwrscale.c b/drivers/gpu/msm/kgsl_pwrscale.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_pwrscale.h b/drivers/gpu/msm/kgsl_pwrscale.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_sharedmem.c b/drivers/gpu/msm/kgsl_sharedmem.c
+old mode 100644
+new mode 100755
+index dfbea53c3..4c54553e9
+--- a/drivers/gpu/msm/kgsl_sharedmem.c
++++ b/drivers/gpu/msm/kgsl_sharedmem.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2017,2020-2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017 The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -202,7 +202,7 @@ void kgsl_process_init_sysfs(struct kgsl_device *device,
+ 	/* Keep private valid until the sysfs enries are removed. */
+ 	kgsl_process_private_get(private);
+ 
+-	snprintf(name, sizeof(name), "%d", pid_nr(private->pid));
++	snprintf(name, sizeof(name), "%d", private->pid);
+ 
+ 	if (kobject_init_and_add(&private->kobj, &ktype_mem_entry,
+ 		kgsl_driver.prockobj, name)) {
+@@ -342,7 +342,6 @@ int kgsl_allocate_user(struct kgsl_device *device,
+ 	int ret;
+ 
+ 	memdesc->flags = flags;
+-	spin_lock_init(&memdesc->lock);
+ 
+ 	if (kgsl_mmu_get_mmutype(device) == KGSL_MMU_TYPE_NONE)
+ 		ret = kgsl_sharedmem_alloc_contig(device, memdesc, size);
+@@ -374,6 +373,8 @@ static int kgsl_page_alloc_vmfault(struct kgsl_memdesc *memdesc,
+ 		get_page(page);
+ 		vmf->page = page;
+ 
++		memdesc->mapsize += PAGE_SIZE;
++
+ 		return 0;
+ 	}
+ 
+@@ -503,6 +504,8 @@ static int kgsl_contiguous_vmfault(struct kgsl_memdesc *memdesc,
+ 	else if (ret == -EFAULT)
+ 		return VM_FAULT_SIGBUS;
+ 
++	memdesc->mapsize += PAGE_SIZE;
++
+ 	return VM_FAULT_NOPAGE;
+ }
+ 
+diff --git a/drivers/gpu/msm/kgsl_sharedmem.h b/drivers/gpu/msm/kgsl_sharedmem.h
+old mode 100644
+new mode 100755
+index ee89cfb80..e5da594b7
+--- a/drivers/gpu/msm/kgsl_sharedmem.h
++++ b/drivers/gpu/msm/kgsl_sharedmem.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2002,2007-2017,2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2002,2007-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -283,7 +283,6 @@ static inline int kgsl_allocate_global(struct kgsl_device *device,
+ 
+ 	memdesc->flags = flags;
+ 	memdesc->priv = priv;
+-	spin_lock_init(&memdesc->lock);
+ 
+ 	if (((memdesc->priv & KGSL_MEMDESC_CONTIG) != 0) ||
+ 		(kgsl_mmu_get_mmutype(device) == KGSL_MMU_TYPE_NONE))
+diff --git a/drivers/gpu/msm/kgsl_snapshot.c b/drivers/gpu/msm/kgsl_snapshot.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_snapshot.h b/drivers/gpu/msm/kgsl_snapshot.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_sync.c b/drivers/gpu/msm/kgsl_sync.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_sync.h b/drivers/gpu/msm/kgsl_sync.h
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_trace.c b/drivers/gpu/msm/kgsl_trace.c
+old mode 100644
+new mode 100755
+diff --git a/drivers/gpu/msm/kgsl_trace.h b/drivers/gpu/msm/kgsl_trace.h
+old mode 100644
+new mode 100755
+index 5f325729f..6438c6e65
+--- a/drivers/gpu/msm/kgsl_trace.h
++++ b/drivers/gpu/msm/kgsl_trace.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016,2020-2021, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -417,7 +417,7 @@ TRACE_EVENT(kgsl_mem_alloc,
+ 	TP_fast_assign(
+ 		__entry->gpuaddr = mem_entry->memdesc.gpuaddr;
+ 		__entry->size = mem_entry->memdesc.size;
+-		__entry->tgid = pid_nr(mem_entry->priv->pid);
++		__entry->tgid = mem_entry->priv->pid;
+ 		kgsl_get_memory_usage(__entry->usage, sizeof(__entry->usage),
+ 				     mem_entry->memdesc.flags);
+ 		__entry->id = mem_entry->id;
+@@ -433,9 +433,9 @@ TRACE_EVENT(kgsl_mem_alloc,
+ 
+ TRACE_EVENT(kgsl_mem_mmap,
+ 
+-	TP_PROTO(struct kgsl_mem_entry *mem_entry, unsigned long useraddr),
++	TP_PROTO(struct kgsl_mem_entry *mem_entry),
+ 
+-	TP_ARGS(mem_entry, useraddr),
++	TP_ARGS(mem_entry),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(unsigned long, useraddr)
+@@ -447,7 +447,7 @@ TRACE_EVENT(kgsl_mem_mmap,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->useraddr = useraddr;
++		__entry->useraddr = mem_entry->memdesc.useraddr;
+ 		__entry->gpuaddr = mem_entry->memdesc.gpuaddr;
+ 		__entry->size = mem_entry->memdesc.size;
+ 		kgsl_get_memory_usage(__entry->usage, sizeof(__entry->usage),
+@@ -510,7 +510,7 @@ TRACE_EVENT(kgsl_mem_map,
+ 		__entry->size = mem_entry->memdesc.size;
+ 		__entry->fd = fd;
+ 		__entry->type = kgsl_memdesc_usermem_type(&mem_entry->memdesc);
+-		__entry->tgid = pid_nr(mem_entry->priv->pid);
++		__entry->tgid = mem_entry->priv->pid;
+ 		kgsl_get_memory_usage(__entry->usage, sizeof(__entry->usage),
+ 				     mem_entry->memdesc.flags);
+ 		__entry->id = mem_entry->id;
+@@ -545,7 +545,7 @@ TRACE_EVENT(kgsl_mem_free,
+ 		__entry->gpuaddr = mem_entry->memdesc.gpuaddr;
+ 		__entry->size = mem_entry->memdesc.size;
+ 		__entry->type = kgsl_memdesc_usermem_type(&mem_entry->memdesc);
+-		__entry->tgid = pid_nr(mem_entry->priv->pid);
++		__entry->tgid = mem_entry->priv->pid;
+ 		kgsl_get_memory_usage(__entry->usage, sizeof(__entry->usage),
+ 				     mem_entry->memdesc.flags);
+ 		__entry->id = mem_entry->id;
+@@ -580,7 +580,7 @@ TRACE_EVENT(kgsl_mem_sync_cache,
+ 		__entry->gpuaddr = mem_entry->memdesc.gpuaddr;
+ 		kgsl_get_memory_usage(__entry->usage, sizeof(__entry->usage),
+ 				     mem_entry->memdesc.flags);
+-		__entry->tgid = pid_nr(mem_entry->priv->pid);
++		__entry->tgid = mem_entry->priv->pid;
+ 		__entry->id = mem_entry->id;
+ 		__entry->op = op;
+ 		__entry->offset = offset;
+diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
+index a7b3f6d7c..fbd4e97af 100644
+--- a/drivers/power/reset/msm-poweroff.c
++++ b/drivers/power/reset/msm-poweroff.c
+@@ -11,6 +11,11 @@
+  *
+  */
+ 
++#include <linux/kmsg_dump.h>
++#include <linux/blkdev.h>
++#include <linux/genhd.h>
++#include <linux/bio.h>
++#include <linux/gfp.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -296,6 +301,100 @@ static void halt_spmi_pmic_arbiter(void)
+ 	}
+ }
+ 
++/* s8dbg: debug-only bootloop catcher, enabled by "s8dbg.recovery" on the kernel cmdline */
++static bool s8dbg_recovery;
++static int __init s8dbg_recovery_setup(char *str)
++{
++	s8dbg_recovery = true;
++	return 1;
++}
++__setup("s8dbg.recovery", s8dbg_recovery_setup);
++
++/*
++ * s8dbg log dump: in debug mode, copy the printk buffer to the start of the 'cache' partition on reboot
++ * (process context, storage still up). Layout: 4 KiB header "S8DBGLOG <len> <reboot cmd>", then the log.
++ */
++#define S8DBG_LOG_MAX	(2 << 20)
++static struct block_device *s8dbg_find_part(const char *name)
++{
++	struct class_dev_iter iter;
++	struct device *dev;
++	dev_t devt = 0;
++
++	class_dev_iter_init(&iter, &block_class, NULL, &part_type);
++	while ((dev = class_dev_iter_next(&iter))) {
++		struct hd_struct *part = dev_to_part(dev);
++
++		if (part->info && !strcmp((char *)part->info->volname, name)) {
++			devt = dev->devt;
++			break;
++		}
++	}
++	class_dev_iter_exit(&iter);
++	if (!devt)
++		return NULL;
++	return blkdev_get_by_dev(devt, FMODE_WRITE, NULL);
++}
++
++static int s8dbg_logdump(struct notifier_block *nb, unsigned long code, void *data)
++{
++	struct kmsg_dumper dumper = { .active = true };
++	struct block_device *bdev;
++	unsigned int order = get_order(S8DBG_LOG_MAX + PAGE_SIZE);
++	unsigned long buf;
++	size_t len = 0, done;
++	sector_t sector = 0;
++
++	pr_emerg("s8dbg: reboot code=%lu cmd=%s - dumping kernel log to cache\n",
++		 code, data ? (char *)data : "");
++	buf = __get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
++	if (!buf)
++		return NOTIFY_DONE;
++	kmsg_dump_rewind(&dumper);
++	kmsg_dump_get_buffer(&dumper, false, (char *)buf + PAGE_SIZE, S8DBG_LOG_MAX, &len);
++	snprintf((char *)buf, PAGE_SIZE, "S8DBGLOG %zu %s\n", len, data ? (char *)data : "");
++
++	bdev = s8dbg_find_part("cache");
++	if (IS_ERR_OR_NULL(bdev)) {
++		pr_emerg("s8dbg: cache partition not found\n");
++		goto out;
++	}
++	for (done = 0; done < PAGE_SIZE + len; ) {
++		struct bio *bio = bio_alloc(GFP_KERNEL, BIO_MAX_PAGES);
++		unsigned int n = 0;
++
++		bio->bi_bdev = bdev;
++		bio->bi_iter.bi_sector = sector;
++		while (n < BIO_MAX_PAGES && done < PAGE_SIZE + len) {
++			if (!bio_add_page(bio, virt_to_page(buf + done), PAGE_SIZE, 0))
++				break;
++			done += PAGE_SIZE;
++			n++;
++		}
++		sector += (n * PAGE_SIZE) >> 9;
++		submit_bio_wait(WRITE_SYNC, bio);
++		bio_put(bio);
++	}
++	blkdev_put(bdev, FMODE_WRITE);
++	pr_emerg("s8dbg: wrote %zu bytes of kernel log to cache\n", len);
++out:
++	free_pages(buf, order);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block s8dbg_reboot_nb = {
++	.notifier_call = s8dbg_logdump,
++	.priority = INT_MIN,	/* last notifier: capture as much shutdown output as possible */
++};
++
++static int __init s8dbg_logdump_init(void)
++{
++	if (s8dbg_recovery)
++		register_reboot_notifier(&s8dbg_reboot_nb);
++	return 0;
++}
++late_initcall(s8dbg_logdump_init);
++
+ static void msm_restart_prepare(const char *cmd)
+ {
+ 	bool need_warm_reset = false;
+@@ -304,6 +403,15 @@ static void msm_restart_prepare(const char *cmd)
+ 	unsigned long value;
+ 	int hard_reset_reason = 0xff;
+ #endif
++
++	if (s8dbg_recovery) {
++		pr_emerg("s8dbg: restart (cmd=%s) redirected to recovery via warm reset\n",
++			 cmd ? cmd : "");
++		qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
++		qpnp_pon_set_restart_reason(PON_RESTART_REASON_RECOVERY);
++		__raw_writel(0x77665502, restart_reason);
++		return;
++	}
+ #ifndef CONFIG_SEC_DEBUG
+ 	bool need_warm_reset = false;
+ 
+diff --git a/drivers/soc/qcom/qdsp6v2/apr.c b/drivers/soc/qcom/qdsp6v2/apr.c
+index 8215674f1..bc105be95 100644
+--- a/drivers/soc/qcom/qdsp6v2/apr.c
++++ b/drivers/soc/qcom/qdsp6v2/apr.c
+@@ -293,6 +293,8 @@ static void apr_add_child_devices(struct work_struct *work)
+ {
+ 	int ret;
+ 
++	if (!apr_dev_ptr)	/* legacy (Pie) DT: audio devices are top-level nodes */
++		return;
+ 	ret = of_platform_populate(apr_dev_ptr->of_node,
+ 			NULL, NULL, apr_dev_ptr);
+ 	if (ret)
+@@ -1099,7 +1101,7 @@ static void apr_cleanup(void)
+ 	}
+ }
+ 
+-static int apr_probe(struct platform_device *pdev)
++static int apr_common_init(struct device *dev)
+ {
+ 	int i, j, k;
+ 
+@@ -1129,11 +1131,16 @@ static int apr_probe(struct platform_device *pdev)
+ 	subsys_notif_register("apr_modem", AUDIO_NOTIFIER_MODEM_DOMAIN,
+ 			      &modem_service_nb);
+ 
+-	apr_dev_ptr = &pdev->dev;
++	apr_dev_ptr = dev;
+ 	INIT_DELAYED_WORK(&add_chld_dev_work, apr_add_child_devices);
+ 	return 0;
+ }
+ 
++static int apr_probe(struct platform_device *pdev)
++{
++	return apr_common_init(&pdev->dev);
++}
++
+ static int apr_remove(struct platform_device *pdev)
+ {
+ 	apr_cleanup();
+@@ -1157,7 +1164,15 @@ static struct platform_driver apr_driver = {
+ 
+ static int __init apr_init(void)
+ {
+-	platform_driver_register(&apr_driver);
++	struct device_node *np = of_find_compatible_node(NULL, NULL, "qcom,msm-audio-apr");
++
++	if (np) {
++		of_node_put(np);
++		platform_driver_register(&apr_driver);
++	} else {
++		pr_info("%s: no qcom,msm-audio-apr DT node, legacy (Pie DT) init\n", __func__);
++		apr_common_init(NULL);
++	}
+ 	apr_dummy_init();
+ 	return 0;
+ }

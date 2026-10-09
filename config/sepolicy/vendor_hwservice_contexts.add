@@ -1,0 +1,5 @@
+vendor.samsung.hardware.nfc::ISecNfc	u:object_r:hal_nfc_hwservice:s0
+vendor.samsung.hardware.biometrics.fingerprint::ISecBiometricsFingerprint	u:object_r:hal_fingerprint_hwservice:s0
+vendor.samsung.hardware.wifi::IWifiExt	u:object_r:hal_wifi_hwservice:s0
+vendor.samsung.hardware.wifi.supplicant::ISupplicantExt	u:object_r:hal_wifi_supplicant_hwservice:s0
+vendor.samsung.hardware.wifi.hostapd::ISemHostapd	u:object_r:hal_wifi_hostapd_hwservice:s0

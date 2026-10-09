@@ -1,0 +1,9 @@
+bin/hw/android.hardware.sensors@1.0-service
+bin/sensors.qti
+etc/init/android.hardware.sensors@1.0-service.rc
+lib64/hw/android.hardware.sensors@1.0-impl.so
+lib64/libsensor1.so
+lib64/libsensor_reg.so
+lib64/libsns_low_lat_stream_stub.so
+lib64/sensors.grip.so
+lib64/sensors.ssc.so

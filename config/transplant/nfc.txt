@@ -1,0 +1,4 @@
+G9600:bin/hw/sec.android.hardware.nfc@1.2-service
+G9600:etc/init/sec.android.hardware.nfc@1.2-service.rc
+G9600:lib64/nfc_nci_sec.so
+G9600:lib64/vendor.samsung.hardware.nfc@2.0.so

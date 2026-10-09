@@ -1,0 +1,3 @@
+# s8dbg (debug builds only): cancel the kernel boot watchdog once Android has finished booting
+on property:sys.boot_completed=1
+    write /sys/module/msm_poweroff/parameters/s8dbg_timeout 0

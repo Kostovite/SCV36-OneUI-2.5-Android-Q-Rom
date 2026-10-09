@@ -1,0 +1,4 @@
+SYSTEM:lib64/vendor.samsung.hardware.bluetooth@1.0.so
+bin/hw/android.hardware.bluetooth@1.0-service
+etc/init/android.hardware.bluetooth@1.0-service.rc
+lib64/hw/android.hardware.bluetooth@1.0-impl.so

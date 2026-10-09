@@ -1,0 +1,4 @@
+# shell / python / configs run in WSL, the build server, TWRP and on the phone: always LF
+* text=auto eol=lf
+*.ps1 text eol=lf
+*.diff text eol=lf -whitespace

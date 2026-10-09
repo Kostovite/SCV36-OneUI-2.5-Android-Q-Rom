@@ -1,0 +1,37 @@
+; (no extra rules needed: radio configsvc is handled by the T835 secril_config_svc)
+; S8 notification LED (SM5720 RGB, sec_class device "led" = /sys/devices/virtual/sec/led, init.rc chowns it to
+; system): plain sysfs on Q -> Settings (system_app) cannot stat led_blink (Rune.supportLedIndicator() = false, no
+; "LED indicator" switch) and system_server cannot write led_pattern. sysfs_led_writable is already rw for both.
+(genfscon sysfs /devices/virtual/sec/led (u object_r sysfs_led_writable ((s0) (s0))))
+; On Q the writer is the lights HAL (vendor.samsung.hardware.light@3.0-service, hal_light_default, user system):
+; boot log "initialize_fds ... /sys/class/sec/led/led_pattern ... Open error! : [13]" -> rw for the HAL, and
+; vendor_init may chown/chmod the nodes (s8_led.rc, the stock SCV36 ramdisk init.rc lines).
+(allow hal_light_default sysfs_led_writable (dir (search getattr open read)))
+(allow hal_light_default sysfs_led_writable (file (open read write getattr append)))
+(allow vendor_init sysfs_led_writable (file (open read write getattr setattr)))
+(allow vendor_init sysfs_led_writable (dir (search getattr)))
+; The genfscon also labels the led DIRECTORY, and the platform policy only grants file access to sysfs_led_writable
+; -> SecSettings (system_app) still could not stat led_blink (no dir search) -> no "LED indicator" setting.
+(allow system_app sysfs_led_writable (dir (search getattr)))
+(allow system_server sysfs_led_writable (dir (search getattr)))
+(allow lpm sysfs_led_writable (dir (search getattr)))
+; AOD "Show charging information": AODService_v50 Rune.isSupportChargingInfoAlways() returns false whenever
+; /sys/class/sec/led/led_pattern exists (Samsung hides the AOD charging info on LED phones and writes
+; charging_info_always=-1, which also hides the Display setting). AODService and SecSettings both run as system_app;
+; SecSettings checks led_blink, AOD checks led_pattern -> led_pattern gets its own type that system_app cannot stat,
+; so both features are offered. Only the lights HAL / system_server / lpm / vendor_init use led_pattern.
+(type sysfs_led_pattern)
+(roletype object_r sysfs_led_pattern)
+(typeattributeset fs_type (sysfs_led_pattern))
+(typeattributeset sysfs_type (sysfs_led_pattern))
+(genfscon sysfs /devices/virtual/sec/led/led_pattern (u object_r sysfs_led_pattern ((s0) (s0))))
+(allow hal_light_default sysfs_led_pattern (file (open read write getattr append)))
+(allow system_server sysfs_led_pattern (file (open read write getattr append)))
+(allow lpm sysfs_led_pattern (file (open read write getattr append)))
+(allow vendor_init sysfs_led_pattern (file (open read write getattr setattr)))
+
+; Iris: the guide videos of the stock T835 SecIrisService come from IrisS8Overlay (/vendor/overlay). The app hands
+; MediaPlayer an fd into the overlay apk; mediaserver / mediaextractor may only read system_file / app data, not
+; vendor_overlay_file -> "Prepare failed" and a white video box. Read-only access to the overlay apks.
+(allow mediaserver vendor_overlay_file (file (read getattr map)))
+(allow mediaextractor vendor_overlay_file (file (read getattr map)))

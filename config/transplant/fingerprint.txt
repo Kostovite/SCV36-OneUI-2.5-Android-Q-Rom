@@ -1,0 +1,10 @@
+G9600:bin/hw/vendor.samsung.hardware.biometrics.fingerprint@3.0-service
+G9600:etc/init/vendor.samsung.hardware.biometrics.fingerprint@3.0-service.rc
+G9600:lib64/vendor.samsung.hardware.biometrics.fingerprint@3.0.so
+lib64/hw/fingerprint.default.so
+lib64/libbauthserver.so
+lib64/libbauthtzcommon.so
+lib64/libegis_fp_normal_sensor_test.so
+lib64/libgf_in_system_lib.so
+lib64/libqfp_sensortest.so
+lib64/libsynaFpSensorTestNwd.so
