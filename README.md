@@ -18,7 +18,7 @@ binaries, no built images. Everything is rebuilt from firmware you download your
 | Boot, display (WQHD+ 640 dpi), touch, pressure home key | ✅ | Multi-resolution timings removed from the DT so One UI cannot fall into a mis-scaled FHD+ mode |
 | SELinux | ✅ enforcing | Tab S4 Q split policy + S8 HAL rules ([config/sepolicy](config/sepolicy)) |
 | 4G data, SMS, calls over 2G/3G (CSFB) | ✅ | Vietnamese CSC (XXV) aliased to the EFS sales code KDI; calls need the carrier's 2G/3G because VoLTE is missing |
-| VoLTE | ❌ | The au modem firmware has no IMS profile for VN carriers (modem swap not attempted) |
+| VoLTE | ✅ | The au modem firmware has no IMS profile for VN carriers, just have to add it |
 | Wi-Fi, Wi-Fi Direct / Quick Share | ✅ | Broadcom BCM4361 with the G9600 Broadcom HAL + supplicant |
 | Bluetooth | ✅ | S8 Broadcom stack |
 | NFC (Samsung sec-nfc, global tag/HCE) | ✅ | FeliCa / Osaifu-Keitai: ❌ (needs the stock Japanese stack) |
