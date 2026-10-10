@@ -36,8 +36,11 @@ Legend: **S8** = stock SCV36 Pie, **T835** = Tab S4 Q vendor, **G9600** = Galaxy
 - SIM, 4G data, SMS, CSFB calls work. The **Vietnamese CSC (XXV)** comes from an SM-G960F OXM odm; the EFS sales code is
   `KDI`, so the installer creates `odm/etc/omc/KDI` as a copy of XXV (EFS is never written).
 - The odm must be labelled as `/odm` (not `/vendor/odm`) or the IMS/ePDG CSC parsers get EACCES.
-- **VoLTE does not work**: the SCV36 modem firmware carries only KDDI/docomo MCFG profiles (RAT policy only, no IMS items);
-  the modem throttles the IMS PDN (QMI 2/211). Swapping the CP was judged not worth the RF/NV risk.
+- **VoLTE works** (Viettel): IMS registers as `VIETTEL VOLTE` on LTE (mmtel + mmtel-video, smsip, ss) with the stock au
+  modem firmware - no CP swap or MCFG change. The SCV36 modem only carries KDDI/docomo MCFG profiles, but those hold
+  just the RAT policy, so they don't block IMS. What was missing was the CSC: once `odm/etc/omc/KDI` = XXV and the odm
+  is labelled as `/odm`, the IMS stack reads the Vietnamese carrier features and uses the system's Viettel APNs
+  (`ims` IPv4v6 + `xcap`). The early IMS PDN rejects (QMI 2/211) were seen before the CSC fix.
 
 ## Wi-Fi / Bluetooth / NFC
 

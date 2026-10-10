@@ -55,4 +55,4 @@ result to `boot`. Every update zip flashes the non-root boot again.
 
 - Language / region: the default CSC is Vietnam (`XXV`); Viettel / MobiFone / Vinaphone APNs are included.
 - Set up fingerprint, face and iris in Settings → Biometrics.
-- Known limits: no VoLTE – voice calls need the carrier's 2G/3G (CSFB); a carrier without them (e.g. Viettel has no 3G) has no calls where 2G is gone; no Samsung Pass / Pay, no FeliCa, no FM radio (no chip).
+- Known limits: VoLTE is tested on Viettel only (other carriers depend on their IMS/XCAP APNs in the XXV CSC); no Samsung Pass / Pay, no FeliCa, no FM radio (no chip).

@@ -1311,3 +1311,8 @@ Knox/KnoxGuard left STOCK (not patched). First boot = SELinux permissive, then t
 - Left: CMAS (com.sec.android.app.cmas) crashes twice per boot (background service start from a receiver, pre-existing);
   wakeup reason "0::" = RPM/MPM wakes (gic 35/109) with no named irq; Oculus apps (user) ~3.4 mAh/10 h.
 - Unplugged overnight measurement still to do (USB keeps usb_notify/ssusb awake while plugged).
+- VoLTE status (log catch-up, verified live 2026-10-10): works on Viettel. Samsung IMS: "RegisterTask(s): VIETTEL VOLTE
+  (REGISTERED, rat = 13, service = [mmtel-video, mmtel])", RegiGvnSea services mmtel/mmtel-video/smsip/ss/cdpn,
+  voice tech VOLTE, LTE VoPS supported. APNs are the system's own Viettel entries (edited=0): VIETTEL IMS (ims, IPV4V6)
+  + VIETTEL XCAP (xcap) - no manual APN, no CP/MCFG change. The working pieces are the CSC fixes (KDI -> XXV alias,
+  odm labelled as /odm); the 2/211 IMS PDN throttle from boots 14-15 predates them. README/INSTALL/FINDINGS updated.
