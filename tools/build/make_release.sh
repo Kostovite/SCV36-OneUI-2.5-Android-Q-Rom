@@ -23,4 +23,10 @@ cp $ZIP $R/s8port_update_$D.zip
 cp $TWRP $R/twrp_scv36.img; cp $BOOT $R/boot_release_noroot.img; cp $P/docs/INSTALL.md $R/
 (cd $R && sha256sum AP_*.tar.md5 *.zip *.img > SHA256SUMS && cat SHA256SUMS)
 rm -f $W/system.img.ext4.lz4
+# GitHub release assets must be < 2 GiB: the Odin package goes up in parts (INSTALL.md: copy /b ... / cat to join;
+# SHA256SUMS keeps the hash of the joined file). The whole .tar.md5 stays in $R for local use.
+AP=AP_OneUI2_SCV36_$D.tar.md5
+if [ $(stat -c %s $R/$AP) -ge 2000000000 ]; then
+  (cd $R && rm -f $AP.part* && split -b 1900M -d -a 1 $AP $AP.part && sha256sum $AP.part* >> SHA256SUMS && ls -la $AP.part*)
+fi
 ls -la $R

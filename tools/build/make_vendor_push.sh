@@ -66,6 +66,16 @@ python3 $P/tools/patches/patch_cameraservice_hiddenid.py $SA/lib/libcameraservic
 # removes the stale G9600 semcamera odex/vdex
 mkdir -p $SA/framework
 bash $P/tools/patches/patch_semcamera.sh ~/s8rom/trees/g9600_root/system/framework/semcamera.jar $SA/framework/semcamera.jar
+# Face unlock: (1) S8 Pie libsecfr_engine.so (S8 sec_fr TA shared-buffer layout; the G9600 engine uses the S9 one),
+# NEEDED libQSEEComAPI.so -> libQSEEComAPI_system.so; (2) camera2 vendor keys on HAL1 (legacy shim, invalid vendor id):
+# arm64 libcamera_client + libandroid_runtime patched (tools/patches/patch_camera_legacy_vendortags.py). The keys
+# themselves (samsung.android.control.shootingMode/pafMode) are added by the vendor camera wrapper.
+mkdir -p $SA/lib64
+cp ~/s8rom/trees/s8_system/lib64/libsecfr_engine.so $SA/lib64/libsecfr_engine.so
+patchelf --replace-needed libQSEEComAPI.so libQSEEComAPI_system.so $SA/lib64/libsecfr_engine.so
+readelf -d $SA/lib64/libsecfr_engine.so | grep -q 'libQSEEComAPI_system.so' || { echo "libsecfr_engine patchelf failed"; exit 1; }
+python3 $P/tools/patches/patch_camera_legacy_vendortags.py client ~/s8rom/trees/g9600_root/system/lib64/libcamera_client.so $SA/lib64/libcamera_client.so
+python3 $P/tools/patches/patch_camera_legacy_vendortags.py runtime ~/s8rom/trees/g9600_root/system/lib64/libandroid_runtime.so $SA/lib64/libandroid_runtime.so
 # Iris (Tab S4 Q iris stack + S8 trustlet) and the S8 fingerprint-enroll media (tools/build/stage_iris_t835.sh):
 # system half + its owner/mode/label list (apply_vendor.sh applies every etc/s8port_*_files.txt). The iris UI overlay
 # itself goes into vendor/overlay through build_vendor.sh.

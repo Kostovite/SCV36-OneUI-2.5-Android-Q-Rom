@@ -455,6 +455,24 @@ index 6bfecf430..19ef3a219 100755
 +	  This enables support for Dual TSP.
 +	  use S6SA552X02. 
 +
+diff --git a/drivers/net/wireless/bcmdhd4361/wl_cfg80211.c b/drivers/net/wireless/bcmdhd4361/wl_cfg80211.c
+index d56672e79..46c3378c4 100755
+--- a/drivers/net/wireless/bcmdhd4361/wl_cfg80211.c
++++ b/drivers/net/wireless/bcmdhd4361/wl_cfg80211.c
+@@ -7993,8 +7993,11 @@ wl_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
+ 		return err;
+ 	}
+ 
+-	/* Enlarge pm_enable_work */
+-	wl_add_remove_pm_enable_work(cfg, WL_PM_WORKQ_LONG);
++	/* s8port: only power-save OFF (DHCP start) opens the 20 s PM-off window and its wlan_pm_wake wakelock.
++	 * Power-save ON is applied right below, so drop the pending window instead of re-arming it - otherwise every
++	 * DHCP renewal (pre + post setPowerSave) kept the phone awake for 20 s.
++	 */
++	wl_add_remove_pm_enable_work(cfg, enabled ? WL_PM_WORKQ_DEL : WL_PM_WORKQ_LONG);
+ 
+ 	pm = enabled ? PM_FAST : PM_OFF;
+ 	if (_net_info->pm_block) {
 diff --git a/drivers/nfc/sec_nfc.c b/drivers/nfc/sec_nfc.c
 index 7474aa1ea..d5030af85 100644
 --- a/drivers/nfc/sec_nfc.c

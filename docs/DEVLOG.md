@@ -1236,3 +1236,78 @@ Knox/KnoxGuard left STOCK (not patched). First boot = SELinux permissive, then t
 - **Release build** (out/release/): vendor rebuilt and compared file-by-file with the phone (identical except the
   leftover /dev/fps symlinks of the stock-kernel fingerprint test); iris + fingerprint media now in the update zip
   (system_add + etc/s8port_iris_files.txt metadata, applied by apply_vendor.sh like the TV38 list).
+
+### 2026-10-10 night: audio effects chain, stereo experiment, face engine, Hexagon DSP research
+- Audio quality root cause: on Q all music processing runs inside AudioFlinger (S9 system *_legacy effect libs:
+  SoundBooster v900, SoundAlive, Adapt Sound, Dolby DAP); the S8 HAL's v8 SoundBooster is idle. SoundBooster v900 loads
+  /vendor/etc/SoundBoosterParam.txt = the S8 v8 file -> misparsed speaker tuning. tools/patches/sb_param_v8_to_v9.py
+  converts the stock S8 tuning to the v9 layout (4 mode blocks; 3 -> 8 biquad slots; layout learned from the S9/Tab S4
+  v9 files and GalaxyOS's S8 v9 file). Live: "SetPar()-whole parameter", common 1,4,1,1,1,1,1,1,1,2,0,0,0,0.
+  Dolby dax-default.xml: Tab S4 -> S9 (G9600) tuning. Both in build_vendor.sh 2c'. Backups on /sdcard
+  (SoundBoosterParam_v8_backup.txt, dax-default_t835_backup.xml).
+- Stereo (bottom speaker = L, earpiece = R), S8PORT_STEREO=1 / tools/device/stereo_speaker_live.sh on|off.
+  Listening tests (quiet tones, user at the earpiece): amp MAX98506 is a single chip, "One Stop Mode" Mono Left
+  (Mono Right = absent 2nd chip). Earpiece (WCD9340 EAR via SLIMBUS_0_RX) only sounds in the call layout
+  (SLIM_0_RX Channels One, SLIM RX0 -> RX INT0); every 2-channel layout is silent. Right channel only: DSP PSPD
+  channel mixer of the stream ("AudStr N ChMixer Cfg" = enable,rule,in 2,out 1,port_idx 3 = SLIM_0_RX; weights
+  FL 0 / FR 16384) -> user heard right-only / left-only correctly. Maps/weights in the mixer defaults (Cfg copies
+  them, audio_route writes Cfg first), Cfg switched in "deep-buffer-playback speaker" (PCM 0) and
+  "low-latency-playback speaker" (PCM 13); combined devices keep "<usecase> speaker-only". Compress offload
+  (MultiMedia4) has no channel mixer -> audio.offload.disable=true (apply_vendor.sh when the stereo mixer is
+  installed). Floating feature DUAL_SPEAKER TRUE + spk_stereo (no SoundBooster mono downmix).
+- Face unlock root cause: G9600 libsecfr_engine.so vs the S8 sec_fr TA = different shared-buffer layout (S8: total
+  0xf0000, frame 0x70000, header 0x800..0x854; S9: 0x110000 / 0x90000 / 0x6000..0x6054; 3 functions differ, the other
+  18 and all 70 libFaceService functions identical). Fix candidate: S8 Pie libsecfr_engine.so with NEEDED
+  libQSEEComAPI.so -> libQSEEComAPI_system.so (patchelf; all 4 QSEECom imports present). Installed
+  (tools/device/face_s8engine_live.sh): TA loads, pre_enroll / hmackey / init_enroll all return 0.
+- Face camera: BioFaceFr_V3 is camera2-only and sets samsung.android.control.shootingMode on open -> "Could not find
+  tag for key" (enroll error 10003). Declaring the keys in the HAL wrapper (get_vendor_tag_ops +0x8c, own section
+  0x8017) put them into cameraserver's descriptor but did not help: all cameras are HAL1, so camera2 runs through the
+  in-app legacy shim whose metadata has no vendor id; nativeGetTagFromKeyLocal only asks the per-vendor-id cache and
+  type lookups with an invalid id use the global vendor_tag_ops (unset in apps on HIDL). Fix
+  (tools/patches/patch_camera_legacy_vendortags.py, arm64 only = app processes; cameraserver is 32-bit):
+  libcamera_client getVendorTagDescriptor -> invalid id = the (single) provider's descriptor; libandroid_runtime
+  setupGlobalVendorTagDescriptor also installs that descriptor as the global one. Live (camera_vendortag_live.sh):
+  camera opens, 640x480 frames into the TA, "enroll succeeds" (Face 1); user confirmed face unlock works.
+  Build: make_vendor_push.sh puts the S8 engine + both patched libs into system_add.
+- Intelligent Scan (IBS_BiometricsService -> irisd authenticateIB): "auth iris init" (TA cmd 0x7) = 0, then "auth
+  face init" (same cmd, face type) = -1 (-6 on some tries); getAuthId type(1) fails too. The face half of Intelligent
+  Scan runs inside sec_iris (sec_multi_bio_*, IR/RGB face CNN, liveness): present in the T835 / S9 TAs (14 MB), absent
+  from the S8 TA (2.9 MB, iris only; S8 libIris* have no IB code either). Only the S8 TA loads (per-product fused OEM
+  root, see 2026-10-09) -> Intelligent Scan cannot work on the S8. Face and iris each work.
+- Hexagon DSP: SD835 = Hexagon 682 (V62) aDSP with HVX, no cDSP. Apps already have /dev/adsprpc-smd (appdomain
+  qdsp_device open/read/ioctl/map); public libfastcvopt.so + signed fastcv/hvx skels present. S9 NNAPI HAL
+  (neuralnetworks@1.2-service-qti, unnhal-acc-hvx) is V65 + _dom=cdsp -> not portable. LiteRT QNN/NPU = SM8450+ only.
+  TFLite benchmark_model (MobileNet v1 224): CPU XNNPACK 4t float 26.1 ms / int8 18.2 ms, GPU (Adreno 540 OpenCL)
+  11.9 / 12.6 ms, NNAPI = reference CPU only. Hexagon delegate needs libhexagon_interface.so + Qualcomm's licensed
+  hexagon_nn skel (v1.20, V60 build covers 835) - not yet tested.
+- vaultkeeperd restarts every ~12 s (QSEECom_get_handle each time; left alone per KnoxGuard rule).
+
+### 2026-10-10 battery: DHCP-renewal wakelock fixed in bcmdhd4361, vaultkeeperd stopped, background services limited
+- Capture (9 h 52 m since charge, 97 % screen off): 276 mAh screen-off = ~29 mAh/h (overnight 2026-10-09: ~17).
+  Suspend: 333 ok / 272 failed (102 freeze, c171000.uart = BT HS-UART busy 15x). Awake 10.7 % screen off.
+- #1 kernel waker: wlan_pm_wake 38 min (228x). The router's DHCP lease is 600 s -> DhcpClient.wlan0.RENEW alarm every
+  5 min (118 wakeups, top alarm). Each renewal: ClientModeImpl pre/post DHCP setPowerSave(false/true) ->
+  wl_cfg80211_set_power_mgmt -> wl_add_remove_pm_enable_work(LONG) on BOTH calls -> 20 s PM-off window + 20 s
+  wlan_pm_wake each time ("PM: unlock wlan_pm_wake(20047 ms)", "SET PM to 2"). The S8 build uses
+  drivers/net/wireless/bcmdhd4361 (CONFIG_BCM4361), NOT bcmdhd4359 (same code, not compiled - first fix went there).
+  Fix (s8-q-release 26da01941): power-save ON -> WL_PM_WORKQ_DEL (cancel window + unlock), OFF keeps LONG.
+  Live on kernel #5: wlan_pm_wake 527 ms total over connect + 1 renewal (was 20 s per renewal), PM back to 2, Wi-Fi ok.
+  Flashed by swapping only the kernel into the phone's current Magisk boot (magiskboot on the phone; ramdisk/DTB/
+  cmdline unchanged); backup /sdcard/boot_backup_20261010_pre_bcmfix.img (+ phone PC C:\Users\minhh\).
+  out/kernel/Image.gz = the fixed kernel (old one: Image_before_bcmpmfix.gz). Still worth raising the router lease.
+- vaultkeeperd: 575 TA load/unload cycles + 58 init respawns per capture, vaultkeeperd 2m08s + qseecomd 46 s CPU.
+  User OK'd stopping it (2026-10-10): Magisk /data/adb/service.d/s8port_vaultkeeper_stop.sh (ctl.stop at late_start;
+  the vaultkeeper HAL that KnoxGuard talks to stays running). Phone booted and works normally after it.
+- suspend HAL (android.system.suspend) 3m37s kernel CPU = cost of the failed suspend attempts -> drops with the above.
+- Background limits: tools/device/battery_tune.sh apply|rollback|status (disabled: diagmonagent, dqagent, knox
+  analytics uploader, securitylogagent, rubin, networkdiagnostic, storyservice, beaconmanager, ipsgeofence, Google
+  Location History, FOTA wssyncmldm + soagent, Samsung Pay fw, omcagent; GMS components: analytics, clearcut
+  QosUploader, federated learning TrainingGcmTaskService, ads social/flags, growth, DropBox stats, usage reporting,
+  nearby offline caching; RUN_ANY_IN_BACKGROUND=ignore + bucket rare for Galaxy Store (PollJob 3m17s wakelock),
+  Samsung push (fails re-provisioning every ~15 min: DUPLICATE_DEVICEID_TO_REPROVISION, 35 wakeups), Theme Store,
+  GOS, cloud/MDE/share/finder services and the Google apps; BLE + Wi-Fi always-scanning off). KnoxGuard, Knox
+  attestation, FMM, GMS push/location stay untouched.
+- Left: CMAS (com.sec.android.app.cmas) crashes twice per boot (background service start from a receiver, pre-existing);
+  wakeup reason "0::" = RPM/MPM wakes (gic 35/109) with no named irq; Oculus apps (user) ~3.4 mAh/10 h.
+- Unplugged overnight measurement still to do (USB keeps usb_notify/ssusb awake while plugged).

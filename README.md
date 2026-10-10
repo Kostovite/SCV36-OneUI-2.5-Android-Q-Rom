@@ -22,9 +22,11 @@ binaries, no built images. Everything is rebuilt from firmware you download your
 | Wi-Fi, Wi-Fi Direct / Quick Share | ✅ | Broadcom BCM4361 with the G9600 Broadcom HAL + supplicant |
 | Bluetooth | ✅ | S8 Broadcom stack |
 | NFC (Samsung sec-nfc, global tag/HCE) | ✅ | FeliCa / Osaifu-Keitai: ❌ (needs the stock Japanese stack) |
-| Audio, speaker protection, mic, video recording | ✅ | S8 Pie audio HAL behind a Q shim |
+| Audio, speaker protection, mic, video recording | ✅ | S8 Pie audio HAL behind a Q shim; S8 speaker tuning converted for the One UI 2 SoundBooster, S9 Dolby tuning |
+| Stereo speakers (bottom = L, earpiece = R) | ✅ | DSP per-stream channel mixer; `S8PORT_STEREO=1` (release builds include it) |
 | Camera (rear, front, torch levels, photo + video) | ✅ | S8 Pie HAL1 stack + S8 SamsungCamera 9.0 |
 | Fingerprint | ✅ | Synaptics NAMSAN (the DT wrongly says Egis ET510) |
+| Face recognition | ✅ enroll + unlock | S8 Pie face engine (S8 trustlet layout) + camera2 vendor keys on the HAL1 legacy shim |
 | Iris | ✅ enroll + unlock | Tab S4 Q iris stack + the S8's own trustlet; stock Samsung-signed app with the S8 UI supplied by overlays |
 | Sensors, auto-rotate, AOD (auto brightness), notification LED | ✅ | |
 | Secure Folder | ✅ | services.jar gate patch (KnoxGuard untouched) |

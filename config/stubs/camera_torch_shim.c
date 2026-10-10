@@ -308,6 +308,101 @@ static int set_torch_mode_strength(const char *camera_id, bool_t enabled, int st
 	return 0;
 }
 
+/*
+ * Vendor tags for the S9 face unlock (BioFaceService FrCamCtrl, always camera2): onOpened sets
+ * samsung.android.control.shootingMode and .pafMode (int32) on its capture request; the S8 Pie HAL does not declare
+ * them -> "Could not find tag for key 'samsung.android.control.shootingMode'" -> camera error -> "failed to open
+ * camera". get_vendor_tag_ops (camera_module_t +0x8c) is wrapped to append both under the same section name in a
+ * section of their own (above every section the HAL uses; VendorTagDescriptor merges equal section names). The S8
+ * cameras are HAL1, so the camera2 legacy shim never forwards them to the HAL - declaring them is all that is needed.
+ */
+#define OFF_GET_VENDOR_TAG_OPS 0x8c
+#define VTAG_TYPE_INT32 1
+#define VTAG_SECTION_MIN 0x8000       /* VENDOR_SECTION: tags >= 0x80000000 */
+
+typedef struct vtag_ops {
+	int (*get_tag_count)(const struct vtag_ops *v);
+	void (*get_all_tags)(const struct vtag_ops *v, unsigned int *tag_array);
+	const char *(*get_section_name)(const struct vtag_ops *v, unsigned int tag);
+	const char *(*get_tag_name)(const struct vtag_ops *v, unsigned int tag);
+	int (*get_tag_type)(const struct vtag_ops *v, unsigned int tag);
+	void *reserved[8];
+} vtag_ops_t;
+typedef void (*get_vtag_ops_fn)(vtag_ops_t *ops);
+
+static const char *const extra_tag_names[] = { "shootingMode", "pafMode" };
+#define EXTRA_TAGS 2
+#define EXTRA_SECTION_NAME "samsung.android.control"
+static get_vtag_ops_fn real_get_vtag_ops;
+static vtag_ops_t real_vtag_ops;
+static unsigned int extra_section;   /* 0 until the real tags were enumerated */
+
+static int is_extra(unsigned int tag)
+{
+	return extra_section && (tag >> 16) == extra_section && (tag & 0xffff) < EXTRA_TAGS;
+}
+
+static int vt_get_tag_count(const vtag_ops_t *v)
+{
+	int n = real_vtag_ops.get_tag_count ? real_vtag_ops.get_tag_count(&real_vtag_ops) : 0;
+	(void)v;
+	return (n < 0 ? 0 : n) + EXTRA_TAGS;
+}
+
+static void vt_get_all_tags(const vtag_ops_t *v, unsigned int *tags)
+{
+	int i, n = real_vtag_ops.get_tag_count ? real_vtag_ops.get_tag_count(&real_vtag_ops) : 0;
+	unsigned int sec = VTAG_SECTION_MIN;
+	(void)v;
+	if (n < 0)
+		n = 0;
+	if (n)
+		real_vtag_ops.get_all_tags(&real_vtag_ops, tags);
+	for (i = 0; i < n; i++)
+		if ((tags[i] >> 16) >= sec)
+			sec = (tags[i] >> 16) + 1;
+	extra_section = sec;
+	for (i = 0; i < EXTRA_TAGS; i++)
+		tags[n + i] = (sec << 16) | i;
+	__android_log_print(LOG_I, TAG, "vendor tags: %d from the HAL + %d (%s.shootingMode/pafMode, section 0x%x)",
+			    n, EXTRA_TAGS, EXTRA_SECTION_NAME, sec);
+}
+
+static const char *vt_get_section_name(const vtag_ops_t *v, unsigned int tag)
+{
+	(void)v;
+	if (is_extra(tag))
+		return EXTRA_SECTION_NAME;
+	return real_vtag_ops.get_section_name ? real_vtag_ops.get_section_name(&real_vtag_ops, tag) : 0;
+}
+
+static const char *vt_get_tag_name(const vtag_ops_t *v, unsigned int tag)
+{
+	(void)v;
+	if (is_extra(tag))
+		return extra_tag_names[tag & 0xffff];
+	return real_vtag_ops.get_tag_name ? real_vtag_ops.get_tag_name(&real_vtag_ops, tag) : 0;
+}
+
+static int vt_get_tag_type(const vtag_ops_t *v, unsigned int tag)
+{
+	(void)v;
+	if (is_extra(tag))
+		return VTAG_TYPE_INT32;
+	return real_vtag_ops.get_tag_type ? real_vtag_ops.get_tag_type(&real_vtag_ops, tag) : -1;
+}
+
+static void shim_get_vendor_tag_ops(vtag_ops_t *ops)
+{
+	if (real_get_vtag_ops && !real_vtag_ops.get_tag_count)
+		real_get_vtag_ops(&real_vtag_ops);
+	ops->get_tag_count = vt_get_tag_count;
+	ops->get_all_tags = vt_get_all_tags;
+	ops->get_section_name = vt_get_section_name;
+	ops->get_tag_name = vt_get_tag_name;
+	ops->get_tag_type = vt_get_tag_type;
+}
+
 #ifdef SHIM_DEBUG
 /* qemu test harness only (tools: scratch shimtest): raw stderr dump, no logd there */
 static void dbg(const char *tag, unsigned long a, unsigned long b, unsigned long c, unsigned long d)
@@ -342,6 +437,8 @@ __attribute__((constructor)) static void shim_init(void)
 	real_open_legacy = *(open_legacy_fn *)(real + OFF_OPEN_LEGACY);
 	if (real_open_legacy)
 		*(void **)(HMI + OFF_OPEN_LEGACY) = (void *)shim_open_legacy;
+	real_get_vtag_ops = *(get_vtag_ops_fn *)(real + OFF_GET_VENDOR_TAG_OPS);
+	*(void **)(HMI + OFF_GET_VENDOR_TAG_OPS) = (void *)shim_get_vendor_tag_ops;
 	real_set_torch_mode = *(set_torch_mode_fn *)(real + OFF_SET_TORCH_MODE);
 	if (!*(void **)(HMI + OFF_SET_TORCH_STRENGTH))
 		*(void **)(HMI + OFF_SET_TORCH_STRENGTH) = (void *)set_torch_mode_strength;

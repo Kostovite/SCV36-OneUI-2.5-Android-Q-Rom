@@ -130,7 +130,8 @@ sed -i 's/^ro\.hardware\.chipname=.*/ro.hardware.chipname=MSM8998/' $M/system/bu
 B=$M/system/build.prop
 FP=$(grep -m1 '^ro.system.build.fingerprint=' $B | cut -d= -f2-)
 sed -i -e '/^ro\.bt\.bdaddr_path=/d' -e '/^ro\.vendor\.gpu\.available_frequencies=/d' -e '/^ro\.build\.fingerprint=/d' -e '/^# S8 port props/d' \
-       -e '/^persist\.camera\.HAL3\.enabled=/d' -e '/^wifi\.direct\.interface=/d' $B
+       -e '/^persist\.camera\.HAL3\.enabled=/d' -e '/^wifi\.direct\.interface=/d' -e '/^audio\.offload\.disable=/d' $B
+STEREO=0; grep -qs 's8port stereo earpiece' $M/system/vendor/etc/mixer_paths_tavil.xml $M/vendor/etc/mixer_paths_tavil.xml && STEREO=1
 { echo "# S8 port props"
   echo "ro.bt.bdaddr_path=/efs/bluetooth/bt_addr"
   # S8 SamsungCamera 9.0 speaks HAL1 (Samsung parameters + sendCommand 1000/1508/1807/1821); the Pie cameraserver
@@ -142,6 +143,8 @@ sed -i -e '/^ro\.bt\.bdaddr_path=/d' -e '/^ro\.vendor\.gpu\.available_frequencie
   # (Wi-Fi Direct: no wifi.direct.interface override - p2p-dev-wlan0 broke P2P setup completely in boot 22; the
   #  supplicant is now the G9600 Broadcom build, which handles the bcmdhd p2p0 netdev itself)
   echo "ro.vendor.gpu.available_frequencies=710000000 670000000 596000000 515000000 414000000 342000000 257000000"
+  # S8PORT_STEREO builds: compress offload has no DSP channel mixer -> music through deep-buffer (speaker L + earpiece R)
+  if [ $STEREO = 1 ]; then echo "audio.offload.disable=true"; fi
   if [ -n "$FP" ]; then echo "ro.build.fingerprint=$FP"; fi; } >> $B
 grep -A4 '^# S8 port props' $B
 grep '^ro.hardware.chipname=' $M/system/build.prop || echo 'note: no chipname line in build.prop'

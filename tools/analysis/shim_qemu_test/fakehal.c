@@ -36,6 +36,16 @@ static int open_legacy(const void *m, const char *id, unsigned v, void **out)
 }
 static int nr(void) { return 2; }
 static int torch(const char *id, int on) { printf("FAKEHAL: set_torch_mode %s %d\n", id, on); return 0; }
+/* vendor tags like QCamera3VendorTags: two tags in sections 0x8000 and 0x8003 */
+typedef struct vt { int (*count)(const struct vt *); void (*all)(const struct vt *, unsigned *);
+	const char *(*sec)(const struct vt *, unsigned); const char *(*name)(const struct vt *, unsigned);
+	int (*type)(const struct vt *, unsigned); void *r[8]; } vt_t;
+static int vt_count(const vt_t *v) { return 2; }
+static void vt_all(const vt_t *v, unsigned *t) { t[0] = 0x80000000; t[1] = 0x80030001; }
+static const char *vt_sec(const vt_t *v, unsigned t) { return t == 0x80000000 ? "org.codeaurora.qcamera3.fake" : "samsung.android.control"; }
+static const char *vt_name(const vt_t *v, unsigned t) { return t == 0x80000000 ? "fakeTag" : "aeMode"; }
+static int vt_type(const vt_t *v, unsigned t) { return t == 0x80000000 ? 0 : 3; }
+static void get_vendor_tag_ops(vt_t *o) { o->count = vt_count; o->all = vt_all; o->sec = vt_sec; o->name = vt_name; o->type = vt_type; }
 static methods_t methods = { dev_open };
 static const struct { unsigned tag; unsigned short mv, hv; const char *id, *name, *author; methods_t *m; void *dso; } tmpl =
 	{ 0x48574d54, 0x204, 0x100, "camera", "QCamera Module", "Qualcomm", &methods, 0 };
@@ -43,6 +53,7 @@ __attribute__((constructor)) static void init(void)
 {
 	memcpy(HMI, &tmpl, sizeof(tmpl));
 	*(void **)(HMI + 0x80) = (void *)nr;
+	*(void **)(HMI + 0x8c) = (void *)get_vendor_tag_ops;
 	*(void **)(HMI + 0x90) = (void *)open_legacy;
 	*(void **)(HMI + 0x94) = (void *)torch;
 }

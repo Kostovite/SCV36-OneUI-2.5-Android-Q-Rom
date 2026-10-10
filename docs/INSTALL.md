@@ -7,11 +7,17 @@ Everything below wipes the phone. Read the whole page first.
 
 | File | What it is |
 |---|---|
-| `AP_OneUI2_SCV36_<date>.tar.md5` | Odin package for a fresh install: boot (release kernel, no root) + recovery (TWRP for SCV36) + system |
-| `s8port_update_<date>.zip` | TWRP zip: boot, the S8 vendor, system additions (camera app, iris, patched libs) + installer |
+| `AP_OneUI2_SCV36_<date>.tar.md5.part0`, `.part1` | Odin package for a fresh install: boot (release kernel, no root) + recovery (TWRP for SCV36) + system. Split in two because GitHub limits files to 2 GiB – join them first (below) |
+| `s8port_update_<date>.zip` | TWRP zip: boot, the S8 vendor, system additions (camera app, iris, face unlock, patched libs) + installer |
 | `twrp_scv36.img` | TWRP 3.4 for SCV36 (our kernel + SCV36 device trees, adb on by default) |
 | `boot_release_noroot.img` | The release boot image on its own |
 | `SHA256SUMS` | Checksums – verify before flashing |
+
+Join the Odin package (the result must match the `AP_…tar.md5` line in `SHA256SUMS`):
+
+- Windows (cmd): `copy /b AP_OneUI2_SCV36_<date>.tar.md5.part0 + AP_OneUI2_SCV36_<date>.tar.md5.part1 AP_OneUI2_SCV36_<date>.tar.md5`
+  then `certutil -hashfile AP_OneUI2_SCV36_<date>.tar.md5 SHA256`
+- Linux / macOS: `cat AP_OneUI2_SCV36_<date>.tar.md5.part* > AP_OneUI2_SCV36_<date>.tar.md5 && sha256sum -c SHA256SUMS --ignore-missing`
 
 ## Before you start
 
@@ -48,5 +54,5 @@ result to `boot`. Every update zip flashes the non-root boot again.
 ## After installing
 
 - Language / region: the default CSC is Vietnam (`XXV`); Viettel / MobiFone / Vinaphone APNs are included.
-- Set up fingerprint and iris in Settings → Biometrics.
+- Set up fingerprint, face and iris in Settings → Biometrics.
 - Known limits: no VoLTE – voice calls need the carrier's 2G/3G (CSFB); a carrier without them (e.g. Viettel has no 3G) has no calls where 2G is gone; no Samsung Pass / Pay, no FeliCa, no FM radio (no chip).

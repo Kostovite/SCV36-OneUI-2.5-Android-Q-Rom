@@ -102,6 +102,17 @@ PROPS
 readelf -W --dyn-syms $V/lib/hw/audio.primary.msm8998.so | grep -q sec_get_audio_stream_instance || { echo "audio wrapper missing"; exit 1; }
 readelf -d $V/lib/hw/audio.primary.msm8998_s8.so | grep -q libprocessgroup.so || { echo "audio: libprocessgroup not linked"; exit 1; }
 echo "audio: S8 Pie HAL stack + wrapper installed (real HAL = lib/hw/audio.primary.msm8998_s8.so)"
+# 2c') music effects run in AudioFlinger on Q (S9 system *_legacy libs: SoundBooster v9, SoundAlive, Dolby DAP), not in
+#      the S8 HAL. SoundBooster v9 reads /vendor/etc/SoundBoosterParam.txt and misparsed the S8 v8 file -> convert the
+#      S8 tuning to the v9 layout (verified live: "SetPar()-whole parameter"). Dolby: S9 phone tuning, not the Tab S4's.
+python3 $P/tools/patches/sb_param_v8_to_v9.py $V/etc/SoundBoosterParam.txt $T/g9600_vendor/etc/SoundBoosterParam.txt \
+  $V/etc/SoundBoosterParam.txt.v9 && mv $V/etc/SoundBoosterParam.txt.v9 $V/etc/SoundBoosterParam.txt || exit 1
+cp $T/g9600_vendor/etc/dolby/dax-default.xml $V/etc/dolby/dax-default.xml
+# optional stereo media (bottom speaker + earpiece), experimental: tools/patches/stereo_earpiece_mixer.py
+if [ "${S8PORT_STEREO:-0}" = 1 ]; then
+  python3 $P/tools/patches/stereo_earpiece_mixer.py $V/etc/mixer_paths_tavil.xml $V/etc/mixer_paths_tavil.xml.st && \
+    mv $V/etc/mixer_paths_tavil.xml.st $V/etc/mixer_paths_tavil.xml || exit 1
+fi
 # fingerprint: S8 Pie bauth stack under the G9600 @3.0 service -> module/device version 2.1 -> 3.0 (the kernel driver
 # accepts the S8 ioctl magic: tools/kernel/patch_et5xx_ioc_magic.py)
 python3 $P/tools/patches/patch_fp_module_version.py $V/lib64/hw/fingerprint.default.so
@@ -203,6 +214,9 @@ sed -i -E 's#(<SEC_FLOATING_FEATURE_SETTINGS_CONFIG_BRAND_NAME>)[^<]*#\1Galaxy S
            s#(<SEC_FLOATING_FEATURE_AUDIO_SUPPORT_DUAL_SPEAKER>)[^<]*#\1FALSE#;
            s#,spk_stereo##;
            /SEC_FLOATING_FEATURE_COMMON_CONFIG_DYN_RESOLUTION_CONTROL/d' $FF
+# S8PORT_STEREO=1: One UI dual-speaker mode (no SoundBooster mono downmix, Dolby Atmos for the speaker) - see 2c'
+[ "${S8PORT_STEREO:-0}" = 1 ] && sed -i -E 's#(<SEC_FLOATING_FEATURE_AUDIO_SUPPORT_DUAL_SPEAKER>)[^<]*#\1TRUE#;
+           /SOUNDALIVE_VERSION>/s#(uhq_level,adapt)#\1,spk_stereo#' $FF
 # (torch level slider stays on: SEC_FLOATING_FEATURE_CAMERA_SUPPORT_TORCH_BRIGHTNESS_LEVEL TRUE from the G9600 list;
 #  the strength call is served by the camera.msm8998.so torch wrapper, see step 2b)
 # S8 notification LED (stock SCV36 TRUE; the G9600 list lacks it -> no "LED indicator" setting)

@@ -60,6 +60,25 @@ int main(int argc, char **argv, char **envp)
 	}
 	r = (*(int (**)(const void *, const char *, unsigned, void **))(hmi + 0x90))(hmi, "1", 0x100, &dev);
 	printf("open_legacy -> %d dev=%p\n", r, dev); fails += r != 0;
+	{	/* vendor tags: the HAL's 2 kept, samsung.android.control.shootingMode/pafMode (int32) added in a new section */
+		struct vt { int (*count)(const void *); void (*all)(const void *, unsigned *);
+			const char *(*sec)(const void *, unsigned); const char *(*name)(const void *, unsigned);
+			int (*type)(const void *, unsigned); void *rsv[8]; } o;
+		unsigned tags[8] = { 0 };
+		int n, i, found = 0;
+		(*(void (**)(struct vt *))(hmi + 0x8c))(&o);
+		n = o.count(&o); o.all(&o, tags);
+		for (i = 0; i < n && i < 8; i++)
+			printf("  tag %#x %s.%s type %d\n", tags[i], o.sec(&o, tags[i]), o.name(&o, tags[i]), o.type(&o, tags[i]));
+		for (i = 0; i < n && i < 8; i++)
+			if (!strcmp(o.sec(&o, tags[i]), "samsung.android.control") && o.type(&o, tags[i]) == 1 &&
+			    (!strcmp(o.name(&o, tags[i]), "shootingMode") || !strcmp(o.name(&o, tags[i]), "pafMode")) &&
+			    (tags[i] >> 16) > 0x8003)
+				found++;
+		printf("vendor tags: count=%d added=%d (expect 4, 2)\n", n, found);
+		fails += !(n == 4 && found == 2 && tags[0] == 0x80000000 && tags[1] == 0x80030001 &&
+			   !strcmp(o.name(&o, 0x80030001), "aeMode") && o.type(&o, 0x80000000) == 0);
+	}
 	r = (*(int (**)(const char *, int))(hmi + 0x94))("0", 1); printf("set_torch_mode -> %d\n", r); fails += r != 0;
 	r = (*(int (**)(const char *, int, int))(hmi + 0xa8))("0", 1, 3); printf("strength(0,on,3) -> %d\n", r); fails += r != 0;
 	r = (*(int (**)(const char *, int, int))(hmi + 0xa8))("0", 0, 3); printf("strength(0,off) -> %d\n", r); fails += r != 0;

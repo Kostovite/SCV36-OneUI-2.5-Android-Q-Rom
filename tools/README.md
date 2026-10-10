@@ -111,6 +111,7 @@ Run against the phone (Windows PowerShell + adb, WSL, TWRP or on-device root): c
 
 | Script | What it does |
 |---|---|
+| [`battery_tune.sh`](device/battery_tune.sh) | Battery tuning (root, on the phone): `apply` (default) / `rollback` / `status`. Disables Samsung/Google telemetry apps and GMS ads/analytics/federated-learning components, background-restricts store/push/cloud apps, switches off BLE/Wi-Fi "always scanning", stops the vaultkeeperd respawn loop (Magisk service.d). |
 | [`bootloop_diag.ps1`](device/bootloop_diag.ps1) | is a system installed, which boot image is on the phone, and the crash logs. |
 | [`capture_boot.ps1`](device/capture_boot.ps1) | Record the full log from the start of boot (needs the debug adb props). Start it while the phone is in TWRP or rebooting; it waits for adb, then logs for -Seconds (default 240) while you test things o… |
 | [`capture_bootloop.ps1`](device/capture_bootloop.ps1) | Record logcat + kernel log from every bootloop iteration (needs AP_5 debug-adb boot image on the phone). |
